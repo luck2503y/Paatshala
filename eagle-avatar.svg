@@ -1,0 +1,53 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Circle Gradient -->
+    <linearGradient id="eagle-bg-grad" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E3A8A"/>
+      <stop offset="1" stop-color="#0F172A"/>
+    </linearGradient>
+    
+    <!-- Gold Beak Gradient -->
+    <linearGradient id="beak-grad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDE047"/>
+      <stop offset="50%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+
+    <!-- Eye Gold Gradient -->
+    <radialGradient id="eye-grad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FEF08A"/>
+      <stop offset="70%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#B45309"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Circular Outer Frame -->
+  <circle cx="60" cy="60" r="58" fill="url(#eagle-bg-grad)" stroke="#38BDF8" stroke-width="2.5" stroke-opacity="0.5"/>
+
+  <!-- Eagle Neck & Shoulders (Dark Feathers) -->
+  <path d="M22 108 C25 90 35 78 45 74 L75 74 C85 78 95 90 98 108 Z" fill="#0F172A"/>
+  <path d="M30 108 L45 84 L52 92 L60 82 L68 92 L75 84 L90 108 Z" fill="#1E293B"/>
+
+  <!-- Eagle Head (Pure White & Silver Feathers) -->
+  <path d="M32 72 C28 50 40 26 62 24 C78 24 92 36 92 52 C92 65 88 74 86 78 C80 75 76 78 72 74 C68 76 62 72 58 75 C52 72 48 76 44 72 C38 75 34 76 32 72 Z" fill="#FFFFFF"/>
+  <path d="M42 40 C48 30 64 26 78 32 C74 38 76 45 74 48 C68 45 62 44 54 46 C48 44 44 42 42 40 Z" fill="#F1F5F9" opacity="0.6"/>
+
+  <!-- Sharp Curved Beak -->
+  <path d="M74 48 C85 48 98 52 106 62 C101 68 94 72 82 72 C76 72 72 65 74 48 Z" fill="url(#beak-grad)"/>
+  <path d="M106 62 C102 74 92 78 82 72 C89 69 94 65 106 62 Z" fill="#B45309" opacity="0.45"/>
+  <circle cx="82" cy="54" r="1.5" fill="#78350F"/>
+
+  <!-- Eagle Brow & Eye -->
+  <path d="M52 42 C58 38 68 40 73 44 C67 43 58 43 52 42 Z" fill="#CBD5E1"/>
+  <!-- Fierce Eye Shape -->
+  <ellipse cx="63" cy="46" rx="6.5" ry="5" fill="url(#eye-grad)"/>
+  <circle cx="64" cy="46" r="3.2" fill="#0F172A"/>
+  <circle cx="65.5" cy="44.5" r="1.2" fill="#FFFFFF"/>
+  <!-- Eye Rim Outline -->
+  <path d="M56 46 Q63 41 70 45" stroke="#475569" stroke-width="1.8" stroke-linecap="round" fill="none"/>
+  <path d="M57 47 Q63 51 69 46" stroke="#475569" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+
+  <!-- Subtle Wing Feather Accents -->
+  <path d="M36 82 L48 96 L42 98 Z" fill="#334155"/>
+  <path d="M84 82 L72 96 L78 98 Z" fill="#334155"/>
+</svg>

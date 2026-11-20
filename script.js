@@ -1,6 +1,6 @@
 /**
- * Paatshala - Mobile Chatting App Login Screen Interaction Script
- * Clean, lightweight, zero-dependency frontend interactions.
+ * Paatshala - Modern Responsive Web Login Screen Interaction Script
+ * Lightweight, zero-dependency frontend interactions.
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -18,22 +18,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const toastMessage = document.getElementById('toastMessage');
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   const themeText = document.getElementById('themeText');
-  const viewToggleBtn = document.getElementById('viewToggleBtn');
-  const currentTimeDisplay = document.getElementById('currentTime');
 
-  // 1. Clock Update for Simulated Status Bar
-  function updateClock() {
-    const now = new Date();
-    const hours = String(now.getHours()).padStart(2, '0');
-    const minutes = String(now.getMinutes()).padStart(2, '0');
-    if (currentTimeDisplay) {
-      currentTimeDisplay.textContent = `${hours}:${minutes}`;
-    }
-  }
-  updateClock();
-  setInterval(updateClock, 30000);
-
-  // 2. Show / Hide Password Toggle
+  // 1. Show / Hide Password Toggle
   if (passwordToggleBtn && passwordInput) {
     passwordToggleBtn.addEventListener('click', (e) => {
       e.preventDefault();
@@ -47,58 +33,65 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 3. Clear validation errors on input
-  usernameInput.addEventListener('input', () => {
-    usernameGroup.classList.remove('has-error');
-    usernameFeedback.textContent = '';
-  });
+  // 2. Clear validation errors on input
+  if (usernameInput) {
+    usernameInput.addEventListener('input', () => {
+      usernameGroup.classList.remove('has-error');
+      usernameFeedback.textContent = '';
+    });
+  }
 
-  passwordInput.addEventListener('input', () => {
-    passwordGroup.classList.remove('has-error');
-    passwordFeedback.textContent = '';
-  });
+  if (passwordInput) {
+    passwordInput.addEventListener('input', () => {
+      passwordGroup.classList.remove('has-error');
+      passwordFeedback.textContent = '';
+    });
+  }
 
-  // 4. Form Submission Simulation (Frontend only, no backend)
-  loginForm.addEventListener('submit', (e) => {
-    e.preventDefault();
+  // 3. Form Submission Simulation (Frontend only, no backend)
+  if (loginForm) {
+    loginForm.addEventListener('submit', (e) => {
+      e.preventDefault();
 
-    const username = usernameInput.value.trim();
-    const password = passwordInput.value;
-    let hasError = false;
+      const username = usernameInput.value.trim();
+      const password = passwordInput.value;
+      let hasError = false;
 
-    // Basic frontend presence check
-    if (!username) {
-      usernameGroup.classList.add('has-error');
-      usernameFeedback.textContent = 'Please enter your username';
-      usernameInput.focus();
-      hasError = true;
-    }
+      // Basic presence check
+      if (!username) {
+        usernameGroup.classList.add('has-error');
+        usernameFeedback.textContent = 'Please enter your username';
+        usernameInput.focus();
+        hasError = true;
+      }
 
-    if (!password) {
-      passwordGroup.classList.add('has-error');
-      passwordFeedback.textContent = 'Please enter your password';
-      if (!hasError) passwordInput.focus();
-      hasError = true;
-    }
+      if (!password) {
+        passwordGroup.classList.add('has-error');
+        passwordFeedback.textContent = 'Please enter your password';
+        if (!hasError) passwordInput.focus();
+        hasError = true;
+      }
 
-    if (hasError) return;
+      if (hasError) return;
 
-    // Simulate login button loading state
-    loginBtn.classList.add('loading');
-    loginBtn.disabled = true;
+      // Simulate login button loading state
+      loginBtn.classList.add('loading');
+      loginBtn.disabled = true;
 
-    setTimeout(() => {
-      loginBtn.classList.remove('loading');
-      loginBtn.disabled = false;
+      // Save username for chat screen personalization
+      localStorage.setItem('paatshala-user', username);
 
-      // Show in-app toast feedback
-      showToast(`Welcome back, @${username}! (Frontend demo)`);
-    }, 850);
-  });
+      setTimeout(() => {
+        // Navigate to the Books & Stories Home Screen
+        window.location.href = 'home.html';
+      }, 600);
+    });
+  }
 
-  // 5. Toast Notification Helper
+  // 4. Toast Notification Helper
   let toastTimer = null;
   function showToast(message) {
+    if (!toastNotification || !toastMessage) return;
     if (toastTimer) clearTimeout(toastTimer);
     toastMessage.textContent = message;
     toastNotification.classList.add('show');
@@ -108,7 +101,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 3800);
   }
 
-  // 6. Theme Switcher (Light / Dark)
+  // 5. Theme Switcher (Light / Dark) with Persistence
   function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme);
     if (themeText) {
@@ -128,14 +121,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 7. Preview View Toggle (Phone Frame vs Responsive Full Width)
-  if (viewToggleBtn) {
-    viewToggleBtn.addEventListener('click', () => {
-      const isFullWidth = document.body.classList.toggle('full-width-mode');
-      const textSpan = viewToggleBtn.querySelector('.btn-text');
-      if (textSpan) {
-        textSpan.textContent = isFullWidth ? 'Full Width' : 'Frame Mode';
-      }
+  // 6. Floating Action Button "D"
+  const floatingDBtn = document.getElementById('floatingDBtn');
+  if (floatingDBtn) {
+    floatingDBtn.addEventListener('click', () => {
+      showToast('Paatshala - Ready to explore stories!');
     });
   }
 });

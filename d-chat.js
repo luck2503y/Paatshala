@@ -1,0 +1,217 @@
+/**
+ * Paatshala - Floating "D" Button with Password Access Modal
+ * Prompts for password when clicking D button, then navigates to dedicated chat page.
+ */
+
+(function () {
+  // Modal & Widget HTML Markup
+  const WIDGET_AND_MODAL_HTML = `
+    <!-- Floating "D" Action Button -->
+    <div class="d-chat-widget" id="dChatWidget">
+      <button class="floating-d-btn" id="floatingDBtn" aria-label="Open Paatshala Chat" title="Paatshala Chat">
+        <span class="d-letter">D</span>
+        <span class="d-btn-ping" id="dBtnPing" aria-hidden="true"></span>
+      </button>
+    </div>
+
+    <!-- Password Verification Modal Backdrop -->
+    <div class="d-pwd-modal-backdrop" id="dPwdModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="dPwdTitle">
+      <div class="d-pwd-modal-card">
+        
+        <!-- Close Corner Button -->
+        <button type="button" class="d-pwd-modal-close" id="dPwdModalClose" aria-label="Cancel and close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+
+        <!-- Header -->
+        <div class="d-pwd-header">
+          <div class="d-pwd-icon-wrap">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+          </div>
+          <h3 class="d-pwd-title" id="dPwdTitle">Protected Chat Access</h3>
+        </div>
+
+        <!-- Password Form -->
+        <form class="d-pwd-form" id="dPwdForm" novalidate>
+          <div class="d-pwd-field">
+            <label for="dPwdInput" class="d-pwd-label">Password</label>
+            <div class="d-pwd-input-wrap" id="dPwdInputWrap">
+              <span class="d-pwd-input-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                  <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+              </span>
+              <input 
+                type="password" 
+                id="dPwdInput" 
+                class="d-pwd-input" 
+                placeholder="Enter password" 
+                autocomplete="current-password"
+                required
+              >
+              <button type="button" class="d-pwd-toggle-btn" id="dPwdToggleBtn" aria-label="Show password">
+                <svg class="pwd-eye-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                  <circle cx="12" cy="12" r="3"></circle>
+                </svg>
+                <svg class="pwd-eye-closed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
+                  <line x1="1" y1="1" x2="23" y2="23"></line>
+                </svg>
+              </button>
+            </div>
+            <span class="d-pwd-error-msg" id="dPwdErrorMsg"></span>
+          </div>
+
+          <button type="submit" class="d-pwd-submit-btn" id="dPwdSubmitBtn">
+            <span>Unlock &amp; Enter Chat</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </button>
+        </form>
+
+      </div>
+    </div>
+  `;
+
+  document.addEventListener('DOMContentLoaded', initPasswordChatWidget);
+
+  function initPasswordChatWidget() {
+    // Clean up existing standalone button if present
+    const oldBtn = document.getElementById('floatingDBtn');
+    if (oldBtn) oldBtn.remove();
+
+    const oldBackdrop = document.getElementById('dPwdModalBackdrop');
+    if (oldBackdrop) oldBackdrop.remove();
+
+    const oldWidget = document.getElementById('dChatWidget');
+    if (oldWidget) oldWidget.remove();
+
+    // Inject modal & widget markup
+    document.body.insertAdjacentHTML('beforeend', WIDGET_AND_MODAL_HTML);
+
+    // Elements
+    const floatingDBtn = document.getElementById('floatingDBtn');
+    const dPwdModalBackdrop = document.getElementById('dPwdModalBackdrop');
+    const dPwdModalClose = document.getElementById('dPwdModalClose');
+    const dPwdForm = document.getElementById('dPwdForm');
+    const dPwdInput = document.getElementById('dPwdInput');
+    const dPwdInputWrap = document.getElementById('dPwdInputWrap');
+    const dPwdToggleBtn = document.getElementById('dPwdToggleBtn');
+    const dPwdErrorMsg = document.getElementById('dPwdErrorMsg');
+    const dPwdSubmitBtn = document.getElementById('dPwdSubmitBtn');
+    const dBtnPing = document.getElementById('dBtnPing');
+
+    // 1. Open Password Modal when clicking "D"
+    function openPasswordModal() {
+      if (dBtnPing) dBtnPing.style.display = 'none';
+      dPwdModalBackdrop.classList.add('open');
+      dPwdErrorMsg.classList.remove('visible');
+      dPwdErrorMsg.textContent = '';
+      dPwdInputWrap.classList.remove('error');
+      dPwdInput.value = '';
+      setTimeout(() => {
+        dPwdInput.focus();
+      }, 150);
+    }
+
+    // 2. Close Modal
+    function closePasswordModal() {
+      dPwdModalBackdrop.classList.remove('open');
+    }
+
+    if (floatingDBtn) {
+      floatingDBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPasswordModal();
+      });
+    }
+
+    if (dPwdModalClose) {
+      dPwdModalClose.addEventListener('click', closePasswordModal);
+    }
+
+    // Close when clicking backdrop outside card
+    dPwdModalBackdrop.addEventListener('click', (e) => {
+      if (e.target === dPwdModalBackdrop) {
+        closePasswordModal();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && dPwdModalBackdrop.classList.contains('open')) {
+        closePasswordModal();
+      }
+    });
+
+    // 3. Password Toggle Visibility
+    if (dPwdToggleBtn) {
+      dPwdToggleBtn.addEventListener('click', () => {
+        const isPassword = dPwdInput.getAttribute('type') === 'password';
+        dPwdInput.setAttribute('type', isPassword ? 'text' : 'password');
+        dPwdToggleBtn.classList.toggle('revealed', isPassword);
+      });
+    }
+
+    // Clear error on input typing
+    dPwdInput.addEventListener('input', () => {
+      dPwdInputWrap.classList.remove('error');
+      dPwdErrorMsg.classList.remove('visible');
+      dPwdErrorMsg.textContent = '';
+    });
+
+    // 4. Submit & Verify Password
+    dPwdForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const enteredPassword = dPwdInput.value.trim().toLowerCase();
+
+      // Accepted passwords (default: paatshala, or standard demo passwords)
+      const validPasswords = ['paatshala', '1234', 'admin', 'lucky', 'pass'];
+
+      if (!enteredPassword) {
+        dPwdInputWrap.classList.add('error');
+        dPwdErrorMsg.textContent = 'Please enter the password';
+        dPwdErrorMsg.classList.add('visible');
+        dPwdInput.focus();
+        return;
+      }
+
+      if (validPasswords.includes(enteredPassword)) {
+        // Correct Password: Show success feedback and navigate
+        dPwdSubmitBtn.innerHTML = `
+          <span>Access Granted! Loading...</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:18px;height:18px;">
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        `;
+        dPwdSubmitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
+        dPwdSubmitBtn.disabled = true;
+
+        sessionStorage.setItem('paatshala_chat_authenticated', 'true');
+
+        setTimeout(() => {
+          // Open new dedicated chat page within the same website (same tab)
+          window.location.href = 'chat.html';
+        }, 450);
+
+      } else {
+        // Incorrect Password
+        dPwdInputWrap.classList.add('error');
+        dPwdErrorMsg.textContent = 'Incorrect password. Please try again.';
+        dPwdErrorMsg.classList.add('visible');
+        dPwdInput.select();
+      }
+    });
+
+  }
+})();

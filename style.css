@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Paatshala - Modern & Clean Mobile Chatting App Login Screen
+   Paatshala - Modern Responsive Web Login Screen
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
@@ -11,17 +11,15 @@
   --primary-hover: #4338ca;
   --primary-active: #3730a3;
   --primary-gradient: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-  --primary-glow: rgba(79, 70, 229, 0.25);
+  --primary-glow: rgba(79, 70, 229, 0.22);
   --primary-subtle: rgba(79, 70, 229, 0.08);
 
   /* Light Theme (Default) */
-  --bg-desktop: #eef2f6;
-  --bg-phone: #ffffff;
+  --bg-page: #f8fafc;
   --bg-card: #ffffff;
+  --bg-navbar: rgba(255, 255, 255, 0.82);
   --bg-input: #f8fafc;
   --bg-input-focus: #ffffff;
-  --bg-btn-secondary: #f8fafc;
-  --bg-btn-secondary-hover: #f1f5f9;
 
   --text-primary: #0f172a;
   --text-secondary: #475569;
@@ -32,15 +30,13 @@
   --border-focus: #4f46e5;
   --border-input: #cbd5e1;
 
-  --status-bar-color: #0f172a;
-  --frame-bezel: #1e293b;
-  --frame-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  --card-shadow: 0 20px 45px -12px rgba(15, 23, 42, 0.08), 0 0 0 1px rgba(15, 23, 42, 0.05);
 
   --font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
   --radius-xs: 6px;
   --radius-sm: 10px;
   --radius-md: 14px;
-  --radius-lg: 20px;
+  --radius-lg: 24px;
   --radius-full: 9999px;
 
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
@@ -51,13 +47,11 @@
    Dark Theme Overrides
    -------------------------------------------------------------------------- */
 [data-theme="dark"] {
-  --bg-desktop: #07090e;
-  --bg-phone: #0f172a;
+  --bg-page: #090d16;
   --bg-card: #0f172a;
+  --bg-navbar: rgba(15, 23, 42, 0.85);
   --bg-input: #1e293b;
   --bg-input-focus: #172033;
-  --bg-btn-secondary: #1e293b;
-  --bg-btn-secondary-hover: #26334a;
 
   --text-primary: #f8fafc;
   --text-secondary: #cbd5e1;
@@ -68,9 +62,7 @@
   --border-focus: #6366f1;
   --border-input: #334155;
 
-  --status-bar-color: #f8fafc;
-  --frame-bezel: #334155;
-  --frame-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 /* --------------------------------------------------------------------------
@@ -87,96 +79,146 @@ html, body {
   width: 100%;
   min-height: 100%;
   font-family: var(--font-family);
-  background-color: var(--bg-desktop);
+  background-color: var(--bg-page);
   color: var(--text-primary);
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   transition: background-color var(--transition-normal), color var(--transition-normal);
+  overflow-x: hidden;
 }
 
 /* --------------------------------------------------------------------------
-   Top Preview Toolbar (Controls for responsive frame & theme)
+   Ambient Backdrop Glow
    -------------------------------------------------------------------------- */
-.preview-toolbar {
+.ambient-glow {
+  position: fixed;
+  width: 550px;
+  height: 550px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
+  filter: blur(90px);
+  opacity: 0.55;
+  transition: opacity var(--transition-normal);
+}
+
+.glow-top-right {
+  top: -150px;
+  right: -100px;
+  background: radial-gradient(circle, rgba(79, 70, 229, 0.22) 0%, rgba(124, 58, 237, 0.08) 60%, transparent 80%);
+}
+
+.glow-bottom-left {
+  bottom: -150px;
+  left: -100px;
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.18) 0%, rgba(79, 70, 229, 0.06) 60%, transparent 80%);
+}
+
+[data-theme="dark"] .ambient-glow {
+  opacity: 0.35;
+}
+
+/* --------------------------------------------------------------------------
+   Standard Website Navigation Bar
+   -------------------------------------------------------------------------- */
+.site-navbar {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
-  height: 52px;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  height: 64px;
+  background-color: var(--bg-navbar);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-subtle);
+  z-index: 100;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 1.25rem;
-  z-index: 100;
   transition: background-color var(--transition-normal), border-color var(--transition-normal);
 }
 
-[data-theme="dark"] .preview-toolbar {
-  background: rgba(15, 23, 42, 0.85);
-}
-
-.toolbar-brand {
+.navbar-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1.5rem;
   display: flex;
   align-items: center;
-  gap: 0.625rem;
+  justify-content: space-between;
 }
 
-.preview-badge {
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--primary);
-  background: var(--primary-subtle);
-  padding: 0.2rem 0.55rem;
-  border-radius: var(--radius-full);
-}
-
-.preview-title {
-  font-weight: 700;
-  font-size: 0.95rem;
-  color: var(--text-primary);
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.tool-btn {
+.brand-link {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.4rem 0.75rem;
-  font-size: 0.8rem;
+  gap: 0.75rem;
+  text-decoration: none;
+  color: inherit;
+}
+
+.brand-logo-small {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px -2px var(--primary-glow);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.brand-logo-small svg {
+  width: 100%;
+  height: 100%;
+}
+
+.brand-text {
+  font-size: 1.15rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  background: linear-gradient(135deg, var(--text-primary) 30%, var(--primary) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.navbar-actions {
+  display: flex;
+  align-items: center;
+}
+
+.theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.45rem 0.85rem;
+  font-size: 0.825rem;
   font-weight: 600;
   font-family: inherit;
   color: var(--text-secondary);
-  background: var(--bg-input);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--transition-fast);
 }
 
-.tool-btn:hover {
+.theme-toggle-btn:hover {
   color: var(--text-primary);
   border-color: var(--primary);
-  background: var(--bg-card);
+  box-shadow: 0 2px 8px -2px var(--primary-glow);
 }
 
-.tool-icon {
+.theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.theme-icon {
   width: 16px;
   height: 16px;
 }
 
-/* Theme Icon Switcher */
+/* Theme Icon Toggle */
 .sun-icon {
   display: none;
 }
@@ -192,139 +234,46 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   App Viewport Container
+   Page Container & Login Wrapper
    -------------------------------------------------------------------------- */
-.app-viewport {
+.page-container {
   min-height: 100vh;
   display: flex;
-  justify-content: center;
   align-items: center;
-  padding: 4.5rem 1rem 2rem;
+  justify-content: center;
+  padding: 6.5rem 1.25rem 3rem;
+  position: relative;
+  z-index: 10;
+}
+
+.login-wrapper {
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
   position: relative;
 }
 
 /* --------------------------------------------------------------------------
-   Mobile Phone Mockup Shell (Desktop view)
+   Auth Card (Responsive Center Container)
    -------------------------------------------------------------------------- */
-.mobile-frame {
+.auth-card {
   width: 100%;
-  max-width: 412px;
-  min-height: 780px;
-  background-color: var(--bg-phone);
-  border-radius: 44px;
-  box-shadow: var(--frame-shadow);
-  border: 8px solid var(--frame-bezel);
-  position: relative;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--card-shadow);
+  padding: 2.75rem 2.25rem;
   transition: all var(--transition-normal);
 }
 
-/* Background subtle ambient glow */
-.ambient-glow {
-  position: absolute;
-  top: -120px;
-  right: -80px;
-  width: 280px;
-  height: 280px;
-  background: radial-gradient(circle, rgba(79, 70, 229, 0.15) 0%, rgba(124, 58, 237, 0) 70%);
-  pointer-events: none;
-  z-index: 1;
-}
-
-/* When full width is toggled or on small devices */
-body.full-width-mode .mobile-frame {
-  max-width: 480px;
-  min-height: 100vh;
-  border-radius: 0;
-  border: none;
-  box-shadow: none;
-}
-
 /* --------------------------------------------------------------------------
-   Mobile Status Bar (Top Chrome)
+   Branding Header Inside Card
    -------------------------------------------------------------------------- */
-.status-bar {
-  height: 44px;
-  padding: 0 1.5rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  font-weight: 600;
-  color: var(--status-bar-color);
-  z-index: 10;
-  user-select: none;
-  position: relative;
-}
-
-.dynamic-island {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 90px;
-  height: 22px;
-  background-color: #000000;
-  border-radius: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  padding-right: 8px;
-}
-
-.camera-lens {
-  width: 9px;
-  height: 9px;
-  background: radial-gradient(circle, #1e293b 40%, #090d16 100%);
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.status-icons {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.status-icon {
-  width: 15px;
-  height: 15px;
-}
-
-/* --------------------------------------------------------------------------
-   Scrollable Mobile Screen Content
-   -------------------------------------------------------------------------- */
-.screen-content {
-  flex: 1;
-  padding: 1.5rem 1.75rem 2rem;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  overflow-y: auto;
-  position: relative;
-  z-index: 5;
-}
-
-/* Hide scrollbar for a native app feel */
-.screen-content::-webkit-scrollbar {
-  display: none;
-}
-.screen-content {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-
-/* --------------------------------------------------------------------------
-   Branding Section
-   -------------------------------------------------------------------------- */
-.branding-section {
+.branding-header {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  margin-top: 0.5rem;
   margin-bottom: 1.75rem;
 }
 
@@ -350,10 +299,10 @@ body.full-width-mode .mobile-frame {
 }
 
 .logo-mark {
-  width: 58px;
-  height: 58px;
+  width: 60px;
+  height: 60px;
   border-radius: 18px;
-  box-shadow: 0 8px 20px -4px var(--primary-glow);
+  box-shadow: 0 8px 24px -4px var(--primary-glow);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,33 +315,18 @@ body.full-width-mode .mobile-frame {
 }
 
 .app-title {
-  font-size: 1.85rem;
+  font-size: 2rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  color: var(--text-primary);
-  margin-bottom: 0.2rem;
   background: linear-gradient(135deg, var(--text-primary) 30%, var(--primary) 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
 
-.app-tagline {
-  font-size: 0.825rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.02em;
-}
-
 /* --------------------------------------------------------------------------
-   Auth Card & Headings
+   Auth Heading Row
    -------------------------------------------------------------------------- */
-.auth-card {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-}
-
-.auth-header {
+.auth-heading-row {
   margin-bottom: 1.5rem;
 }
 
@@ -401,13 +335,6 @@ body.full-width-mode .mobile-frame {
   font-weight: 700;
   color: var(--text-primary);
   letter-spacing: -0.02em;
-  margin-bottom: 0.35rem;
-}
-
-.auth-subtitle {
-  font-size: 0.85rem;
-  color: var(--text-secondary);
-  line-height: 1.45;
 }
 
 /* --------------------------------------------------------------------------
@@ -416,13 +343,13 @@ body.full-width-mode .mobile-frame {
 .login-form {
   display: flex;
   flex-direction: column;
-  gap: 1.125rem;
+  gap: 1.25rem;
 }
 
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
+  gap: 0.4rem;
 }
 
 .label-row {
@@ -432,14 +359,14 @@ body.full-width-mode .mobile-frame {
 }
 
 .form-label {
-  font-size: 0.825rem;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
   letter-spacing: 0.01em;
 }
 
 .forgot-link {
-  font-size: 0.8rem;
+  font-size: 0.825rem;
   font-weight: 600;
   color: var(--primary);
   text-decoration: none;
@@ -474,8 +401,8 @@ body.full-width-mode .mobile-frame {
 }
 
 .input-icon {
-  width: 44px;
-  height: 48px;
+  width: 46px;
+  height: 50px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,8 +413,8 @@ body.full-width-mode .mobile-frame {
 }
 
 .input-icon svg {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
 .input-container:focus-within .input-icon {
@@ -496,9 +423,9 @@ body.full-width-mode .mobile-frame {
 
 .form-input {
   flex: 1;
-  height: 48px;
+  height: 50px;
   padding: 0 0.75rem 0 0;
-  font-size: 0.925rem;
+  font-size: 0.95rem;
   font-family: inherit;
   font-weight: 500;
   color: var(--text-primary);
@@ -514,8 +441,8 @@ body.full-width-mode .mobile-frame {
 
 /* Password Toggle Button */
 .password-toggle-btn {
-  width: 44px;
-  height: 48px;
+  width: 46px;
+  height: 50px;
   background: transparent;
   border: none;
   color: var(--text-muted);
@@ -537,8 +464,8 @@ body.full-width-mode .mobile-frame {
 }
 
 .eye-icon {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
 }
 
 .eye-closed {
@@ -553,7 +480,7 @@ body.full-width-mode .mobile-frame {
 }
 
 .input-feedback {
-  font-size: 0.75rem;
+  font-size: 0.775rem;
   color: #ef4444;
   margin-top: 0.15rem;
   min-height: 1rem;
@@ -570,82 +497,17 @@ body.full-width-mode .mobile-frame {
 }
 
 /* --------------------------------------------------------------------------
-   Remember Me Auxiliary
-   -------------------------------------------------------------------------- */
-.form-auxiliary {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin: -0.25rem 0 0.35rem;
-}
-
-.remember-control {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.5rem;
-  cursor: pointer;
-  user-select: none;
-}
-
-.custom-checkbox {
-  position: absolute;
-  opacity: 0;
-  pointer-events: none;
-}
-
-.checkbox-indicator {
-  width: 18px;
-  height: 18px;
-  border-radius: var(--radius-xs);
-  border: 1.5px solid var(--border-input);
-  background-color: var(--bg-input);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all var(--transition-fast);
-}
-
-.checkbox-indicator svg {
-  width: 12px;
-  height: 12px;
-  stroke: #ffffff;
-  stroke-dasharray: 20;
-  stroke-dashoffset: 20;
-  transition: stroke-dashoffset var(--transition-fast);
-}
-
-.custom-checkbox:checked + .checkbox-indicator {
-  background-color: var(--primary);
-  border-color: var(--primary);
-}
-
-.custom-checkbox:checked + .checkbox-indicator svg {
-  stroke-dashoffset: 0;
-}
-
-.custom-checkbox:focus-visible + .checkbox-indicator {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.remember-text {
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-secondary);
-}
-
-/* --------------------------------------------------------------------------
    Login Action Button
    -------------------------------------------------------------------------- */
 .login-btn {
   width: 100%;
-  height: 50px;
+  height: 52px;
   border: none;
   border-radius: var(--radius-md);
   background: var(--primary-gradient);
   color: var(--text-on-primary);
   font-family: inherit;
-  font-size: 0.975rem;
+  font-size: 1rem;
   font-weight: 600;
   letter-spacing: 0.01em;
   display: flex;
@@ -656,6 +518,7 @@ body.full-width-mode .mobile-frame {
   box-shadow: 0 8px 24px -4px var(--primary-glow);
   position: relative;
   overflow: hidden;
+  margin-top: 0.5rem;
   transition: all var(--transition-fast);
 }
 
@@ -689,11 +552,11 @@ body.full-width-mode .mobile-frame {
   transform: translateX(3px);
 }
 
-/* Loading State */
+/* Loading State Spinner */
 .btn-spinner {
   display: none;
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
   border: 2px solid rgba(255, 255, 255, 0.35);
   border-top-color: #ffffff;
   border-radius: 50%;
@@ -715,157 +578,42 @@ body.full-width-mode .mobile-frame {
 }
 
 /* --------------------------------------------------------------------------
-   Divider & Social Logins
-   -------------------------------------------------------------------------- */
-.auth-divider {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  margin: 1.35rem 0 1rem;
-}
-
-.divider-line {
-  flex: 1;
-  height: 1px;
-  background-color: var(--border-subtle);
-}
-
-.divider-text {
-  font-size: 0.725rem;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--text-muted);
-}
-
-.social-login-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-}
-
-.social-btn {
-  height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  background-color: var(--bg-btn-secondary);
-  color: var(--text-primary);
-  font-family: inherit;
-  font-size: 0.825rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transition-fast);
-}
-
-.social-btn:hover {
-  background-color: var(--bg-btn-secondary-hover);
-  border-color: var(--border-input);
-}
-
-.social-btn:focus-visible {
-  outline: 2px solid var(--primary);
-  outline-offset: 2px;
-}
-
-.social-svg {
-  width: 18px;
-  height: 18px;
-}
-
-.campus-icon {
-  color: var(--primary);
-}
-
-/* --------------------------------------------------------------------------
-   Auth Footer (Sign up prompt)
-   -------------------------------------------------------------------------- */
-.auth-footer {
-  text-align: center;
-  margin-top: auto;
-  padding-top: 0.5rem;
-}
-
-.footer-note {
-  font-size: 0.825rem;
-  color: var(--text-secondary);
-}
-
-.signup-link {
-  font-weight: 700;
-  color: var(--primary);
-  text-decoration: none;
-  margin-left: 0.25rem;
-  transition: color var(--transition-fast);
-}
-
-.signup-link:hover,
-.signup-link:focus-visible {
-  color: var(--primary-hover);
-  text-decoration: underline;
-  outline: none;
-}
-
-/* --------------------------------------------------------------------------
-   Home Indicator (iOS style bottom bar)
-   -------------------------------------------------------------------------- */
-.home-indicator-bar {
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding-bottom: 4px;
-}
-
-.home-indicator {
-  width: 134px;
-  height: 5px;
-  border-radius: 10px;
-  background-color: var(--text-muted);
-  opacity: 0.45;
-}
-
-/* --------------------------------------------------------------------------
    Toast Notification (In-App Feedback)
    -------------------------------------------------------------------------- */
 .toast-notification {
-  position: absolute;
-  bottom: 34px;
-  left: 1.5rem;
-  right: 1.5rem;
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
   background-color: #0f172a;
   color: #f8fafc;
-  padding: 0.75rem 1rem;
+  padding: 0.85rem 1.25rem;
   border-radius: var(--radius-md);
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.35);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.35);
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.85rem;
   opacity: 0;
-  transform: translateY(20px);
   pointer-events: none;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  z-index: 50;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  z-index: 1000;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  max-width: 90%;
 }
 
 [data-theme="dark"] .toast-notification {
   background-color: #1e293b;
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .toast-notification.show {
   opacity: 1;
-  transform: translateY(0);
+  transform: translateX(-50%) translateY(0);
 }
 
 .toast-icon {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   background: rgba(79, 70, 229, 0.2);
   color: #818cf8;
@@ -876,8 +624,8 @@ body.full-width-mode .mobile-frame {
 }
 
 .toast-icon svg {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
 }
 
 .toast-body {
@@ -885,50 +633,97 @@ body.full-width-mode .mobile-frame {
 }
 
 .toast-title {
-  font-size: 0.775rem;
+  font-size: 0.825rem;
   font-weight: 700;
   color: #ffffff;
 }
 
 .toast-desc {
-  font-size: 0.725rem;
+  font-size: 0.775rem;
   color: #cbd5e1;
 }
 
 /* --------------------------------------------------------------------------
-   Responsive Media Queries (Mobile Device Viewport)
+   Responsive Breakpoints
    -------------------------------------------------------------------------- */
+@media (max-width: 520px) {
+  .page-container {
+    padding: 5.5rem 1rem 2rem;
+  }
+
+  .auth-card {
+    padding: 2rem 1.5rem;
+    border-radius: var(--radius-md);
+  }
+
+  .app-title {
+    font-size: 1.75rem;
+  }
+
+  .auth-heading {
+    font-size: 1.35rem;
+  }
+
+  .navbar-container {
+    padding: 0 1rem;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Floating "D" Action Button
+   -------------------------------------------------------------------------- */
+.floating-d-btn {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-gradient);
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.25);
+  box-shadow: 0 10px 25px -4px var(--primary-glow), 0 4px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 999;
+  user-select: none;
+  transition: all var(--transition-fast);
+}
+
+.floating-d-btn:hover {
+  transform: translateY(-3px) scale(1.06);
+  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.55), 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.floating-d-btn:active {
+  transform: translateY(1px) scale(0.96);
+  box-shadow: 0 6px 15px -2px var(--primary-glow);
+}
+
+.floating-d-btn:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.d-letter {
+  font-family: var(--font-family, inherit);
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
 @media (max-width: 480px) {
-  body {
-    background-color: var(--bg-phone);
+  .floating-d-btn {
+    bottom: max(18px, env(safe-area-inset-bottom, 18px));
+    right: 18px;
+    width: 48px;
+    height: 48px;
   }
-
-  .preview-toolbar {
-    display: none;
-  }
-
-  .app-viewport {
-    padding: 0;
-    min-height: 100vh;
-    min-height: 100dvh;
-    align-items: stretch;
-  }
-
-  .mobile-frame {
-    max-width: 100%;
-    min-height: 100vh;
-    min-height: 100dvh;
-    border-radius: 0;
-    border: none;
-    box-shadow: none;
-  }
-
-  .status-bar {
-    /* Safe area inset for notched phones */
-    padding-top: env(safe-area-inset-top, 0);
-  }
-
-  .home-indicator-bar {
-    padding-bottom: env(safe-area-inset-bottom, 8px);
+  .d-letter {
+    font-size: 1.35rem;
   }
 }

@@ -1,0 +1,408 @@
+/* ==========================================================================
+   Paatshala - Floating "D" Button & Password Verification Modal Stylesheet
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Floating "D" Toggle Button
+   -------------------------------------------------------------------------- */
+.d-chat-widget {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+.floating-d-btn {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%));
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.45), 0 4px 10px rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.floating-d-btn:hover {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.6), 0 6px 14px rgba(0, 0, 0, 0.2);
+}
+
+.floating-d-btn:active {
+  transform: translateY(1px) scale(0.95);
+}
+
+.floating-d-btn:focus-visible {
+  outline: 3px solid #6366f1;
+  outline-offset: 3px;
+}
+
+.d-letter {
+  font-family: var(--font-family, var(--font-ui, sans-serif));
+  font-size: 1.55rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.d-btn-ping {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+/* --------------------------------------------------------------------------
+   Password Verification Modal (Backdrop & Card)
+   -------------------------------------------------------------------------- */
+.d-pwd-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.25s ease, visibility 0.25s ease;
+}
+
+.d-pwd-modal-backdrop.open {
+  opacity: 1;
+  visibility: visible;
+}
+
+.d-pwd-modal-card {
+  width: 100%;
+  max-width: 400px;
+  background-color: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-subtle, #e2e8f0);
+  border-radius: 24px;
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.1);
+  padding: 2.25rem 2rem;
+  position: relative;
+  transform: translateY(20px) scale(0.95);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme="dark"] .d-pwd-modal-card {
+  background-color: #0f172a;
+  border-color: #1e293b;
+}
+
+.d-pwd-modal-backdrop.open .d-pwd-modal-card {
+  transform: translateY(0) scale(1);
+}
+
+/* Close Button in Modal Corner */
+.d-pwd-modal-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: none;
+  background-color: var(--bg-input, #f1f5f9);
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+[data-theme="dark"] .d-pwd-modal-close {
+  background-color: #1e293b;
+}
+
+.d-pwd-modal-close:hover {
+  background-color: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+}
+
+.d-pwd-modal-close svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* Header in Modal */
+.d-pwd-header {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.d-pwd-icon-wrap {
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 1rem;
+  border-radius: 18px;
+  background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%));
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 20px -3px rgba(79, 70, 229, 0.35);
+}
+
+.d-pwd-icon-wrap svg {
+  width: 26px;
+  height: 26px;
+}
+
+.d-pwd-title {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--text-main, #0f172a);
+  letter-spacing: -0.02em;
+  margin-bottom: 0.35rem;
+}
+
+[data-theme="dark"] .d-pwd-title {
+  color: #f8fafc;
+}
+
+.d-pwd-subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary, #64748b);
+  line-height: 1.45;
+}
+
+[data-theme="dark"] .d-pwd-subtitle {
+  color: #94a3b8;
+}
+
+/* Form */
+.d-pwd-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.d-pwd-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.d-pwd-label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-main, #0f172a);
+}
+
+[data-theme="dark"] .d-pwd-label {
+  color: #f8fafc;
+}
+
+.d-pwd-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background-color: var(--bg-input, #f8fafc);
+  border: 1.5px solid var(--border-subtle, #e2e8f0);
+  border-radius: 14px;
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .d-pwd-input-wrap {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+
+.d-pwd-input-wrap:focus-within {
+  border-color: #4f46e5;
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+  background-color: #ffffff;
+}
+
+[data-theme="dark"] .d-pwd-input-wrap:focus-within {
+  background-color: #172033;
+  border-color: #6366f1;
+}
+
+.d-pwd-input-wrap.error {
+  border-color: #ef4444;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.18);
+}
+
+.d-pwd-input-icon {
+  width: 42px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted, #94a3b8);
+  flex-shrink: 0;
+}
+
+.d-pwd-input-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.d-pwd-input {
+  flex: 1;
+  height: 48px;
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text-main, #0f172a);
+  outline: none;
+}
+
+[data-theme="dark"] .d-pwd-input {
+  color: #f8fafc;
+}
+
+.d-pwd-input::placeholder {
+  color: var(--text-muted, #94a3b8);
+}
+
+.d-pwd-toggle-btn {
+  width: 42px;
+  height: 48px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.d-pwd-toggle-btn:hover {
+  color: var(--text-main, #0f172a);
+}
+
+[data-theme="dark"] .d-pwd-toggle-btn:hover {
+  color: #ffffff;
+}
+
+.d-pwd-toggle-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+.pwd-eye-closed {
+  display: none;
+}
+.d-pwd-toggle-btn.revealed .pwd-eye-open {
+  display: none;
+}
+.d-pwd-toggle-btn.revealed .pwd-eye-closed {
+  display: block;
+}
+
+.d-pwd-error-msg {
+  font-size: 0.775rem;
+  color: #ef4444;
+  min-height: 1.1rem;
+  display: none;
+}
+
+.d-pwd-error-msg.visible {
+  display: block;
+}
+
+.d-pwd-hint {
+  font-size: 0.75rem;
+  color: var(--text-muted, #94a3b8);
+  text-align: center;
+  margin-top: -0.25rem;
+}
+
+.d-pwd-hint code {
+  background-color: var(--bg-input, #f1f5f9);
+  padding: 0.15rem 0.4rem;
+  border-radius: 4px;
+  font-weight: 700;
+  color: #4f46e5;
+}
+
+[data-theme="dark"] .d-pwd-hint code {
+  background-color: #1e293b;
+  color: #818cf8;
+}
+
+/* Submit Button */
+.d-pwd-submit-btn {
+  width: 100%;
+  height: 48px;
+  border-radius: 14px;
+  background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%));
+  color: #ffffff;
+  border: none;
+  font-family: inherit;
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  box-shadow: 0 8px 20px -3px rgba(79, 70, 229, 0.4);
+  transition: all 0.2s ease;
+}
+
+.d-pwd-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 24px -3px rgba(79, 70, 229, 0.5);
+}
+
+.d-pwd-submit-btn:active {
+  transform: translateY(1px);
+}
+
+.d-pwd-submit-btn svg {
+  width: 17px;
+  height: 17px;
+  transition: transform 0.2s ease;
+}
+
+.d-pwd-submit-btn:hover svg {
+  transform: translateX(3px);
+}
+
+/* --------------------------------------------------------------------------
+   Mobile Adaptations
+   -------------------------------------------------------------------------- */
+@media (max-width: 480px) {
+  .d-chat-widget {
+    bottom: 16px;
+    right: 16px;
+  }
+
+  .floating-d-btn {
+    width: 50px;
+    height: 50px;
+  }
+
+  .d-letter {
+    font-size: 1.4rem;
+  }
+
+  .d-pwd-modal-card {
+    padding: 1.75rem 1.35rem;
+  }
+}
