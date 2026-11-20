@@ -680,6 +680,35 @@ html, body {
   margin-bottom: 0.2rem;
 }
 
+.book-author {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.book-author svg {
+  flex-shrink: 0;
+  width: 13px;
+  height: 13px;
+}
+
+.reader-author-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.825rem;
+  font-weight: 700;
+  color: var(--primary);
+  background-color: var(--primary-subtle);
+  padding: 0.2rem 0.65rem;
+  border-radius: var(--radius-full);
+  margin-bottom: 0.45rem;
+}
+
 .book-subtitle {
   font-size: 0.8rem;
   font-weight: 600;

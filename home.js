@@ -157,6 +157,7 @@ document.addEventListener('DOMContentLoaded', () => {
       const matchesSearch = !q || 
         book.title.toLowerCase().includes(q) || 
         book.subtitle.toLowerCase().includes(q) || 
+        (book.author && book.author.toLowerCase().includes(q)) ||
         book.category.toLowerCase().includes(q) || 
         book.shortDescription.toLowerCase().includes(q);
 
@@ -196,6 +197,7 @@ document.addEventListener('DOMContentLoaded', () => {
               <span class="book-time">${book.readTime}</span>
             </div>
             <h4 class="book-title">${book.title}</h4>
+            ${book.author ? `<p class="book-author"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>By ${book.author}</p>` : ''}
             <p class="book-subtitle">${book.subtitle}</p>
             <p class="book-description">${book.shortDescription}</p>
             <div class="book-card-cta">
@@ -268,7 +270,9 @@ document.addEventListener('DOMContentLoaded', () => {
     readerCoverWrap.innerHTML = book.coverIllustration;
     readerCategoryPill.textContent = book.category;
     readerTitle.textContent = book.title;
-    readerSubtitle.textContent = book.subtitle;
+    readerSubtitle.innerHTML = book.author 
+      ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${book.author}</span><div>${book.subtitle}</div>` 
+      : book.subtitle;
     readerReadTime.textContent = book.readTime;
     readerChaptersCount.textContent = `${book.chapters.length} Chapters`;
     readerOverviewText.textContent = book.overview;
