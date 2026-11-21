@@ -149,18 +149,23 @@ html, body {
 }
 
 .brand-logo-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 11px;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  overflow: hidden;
   box-shadow: 0 4px 12px -2px var(--primary-glow);
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
 }
 
+.brand-logo-icon .brand-logo-img,
 .brand-logo-icon svg {
   width: 100%;
   height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .brand-text-col {

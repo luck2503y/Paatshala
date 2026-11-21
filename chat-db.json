@@ -77,9 +77,36 @@
     "time": "4:46 PM",
     "status": "read",
     "deletedFor": [
-      "A"
+      "A",
+      "D"
     ],
     "isEdited": false,
     "timestamp": 1795259778259
+  },
+  {
+    "id": "msg_1795261921867_jwrxrp",
+    "sender": "A",
+    "text": "hello buddy",
+    "image": null,
+    "time": "5:22 PM",
+    "status": "read",
+    "deletedFor": [
+      "D"
+    ],
+    "isEdited": false,
+    "timestamp": 1795261921867
+  },
+  {
+    "id": "msg_1795261955931_tbq895",
+    "sender": "D",
+    "text": "ha bhai kesa hai",
+    "image": null,
+    "time": "5:22 PM",
+    "status": "sent",
+    "deletedFor": [
+      "D"
+    ],
+    "isEdited": false,
+    "timestamp": 1795261955931
   }
 ]
