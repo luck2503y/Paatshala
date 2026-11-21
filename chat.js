@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Participant Avatars & Names Configuration
   function getParticipantAvatar(letter) {
-    return letter === 'A' ? 'panda-avatar.svg' : 'caretaker-avatar.svg';
+    return letter === 'A' ? 'panda-avatar.svg' : 'black-panther-avatar.svg';
   }
 
   function getParticipantName(letter) {

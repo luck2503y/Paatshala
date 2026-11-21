@@ -4,16 +4,8 @@
  */
 
 (function () {
-  // Modal & Widget HTML Markup
+  // Modal HTML Markup
   const WIDGET_AND_MODAL_HTML = `
-    <!-- Floating "D" Action Button -->
-    <div class="d-chat-widget" id="dChatWidget">
-      <button class="floating-d-btn" id="floatingDBtn" aria-label="Open Paatshala Chat" title="Paatshala Chat">
-        <span class="d-letter">D</span>
-        <span class="d-btn-ping" id="dBtnPing" aria-hidden="true"></span>
-      </button>
-    </div>
-
     <!-- Password Verification Modal Backdrop -->
     <div class="d-pwd-modal-backdrop" id="dPwdModalBackdrop" role="dialog" aria-modal="true" aria-labelledby="dPwdTitle">
       <div class="d-pwd-modal-card">
@@ -180,6 +172,15 @@
       });
     }
 
+    // Bind click event to "D" icon
+    const chapterDBtn = document.getElementById('chapterDBtn');
+    if (chapterDBtn) {
+      chapterDBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPasswordModal('D');
+      });
+    }
+
     // Bind click event to "A" icon
     const chapterABtn = document.getElementById('chapterABtn');
     if (chapterABtn) {
@@ -189,12 +190,19 @@
       });
     }
 
-    // Delegated click listener for "A" icon (handles dynamic chapter updates)
+    // Delegated click listener for "D" and "A" icons
     document.addEventListener('click', (e) => {
+      const dBtn = e.target.closest('#chapterDBtn, .chapter-d-btn, #floatingDBtn');
+      if (dBtn) {
+        e.stopPropagation();
+        openPasswordModal('D');
+        return;
+      }
       const aBtn = e.target.closest('#chapterABtn, .chapter-a-btn');
       if (aBtn) {
         e.stopPropagation();
         openPasswordModal('A');
+        return;
       }
     });
 

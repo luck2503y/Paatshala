@@ -7,7 +7,8 @@
     "time": "3:09 PM",
     "status": "read",
     "deletedFor": [
-      "D"
+      "D",
+      "A"
     ],
     "isEdited": false,
     "timestamp": 1795253986189
@@ -19,8 +20,66 @@
     "image": null,
     "time": "3:20 PM",
     "status": "read",
-    "deletedFor": [],
+    "deletedFor": [
+      "D",
+      "A"
+    ],
     "isEdited": true,
     "timestamp": 1795254638908
+  },
+  {
+    "id": "msg_1795257006980_1m2htq",
+    "sender": "A",
+    "text": "😍",
+    "image": null,
+    "time": "4:00 PM",
+    "status": "read",
+    "deletedFor": [
+      "D",
+      "A"
+    ],
+    "isEdited": false,
+    "timestamp": 1795257006980
+  },
+  {
+    "id": "msg_1795257011251_rc2hit",
+    "sender": "A",
+    "text": "hello kundan",
+    "image": null,
+    "time": "4:00 PM",
+    "status": "read",
+    "deletedFor": [
+      "D",
+      "A"
+    ],
+    "isEdited": false,
+    "timestamp": 1795257011251
+  },
+  {
+    "id": "msg_1795258888787_v3x06p",
+    "sender": "D",
+    "text": "bd",
+    "image": null,
+    "time": "4:31 PM",
+    "status": "read",
+    "deletedFor": [
+      "D",
+      "A"
+    ],
+    "isEdited": false,
+    "timestamp": 1795258888787
+  },
+  {
+    "id": "msg_1795259778259_e9ou94",
+    "sender": "D",
+    "text": "hello buddy",
+    "image": null,
+    "time": "4:46 PM",
+    "status": "read",
+    "deletedFor": [
+      "A"
+    ],
+    "isEdited": false,
+    "timestamp": 1795259778259
   }
 ]

@@ -50,6 +50,23 @@ document.addEventListener('DOMContentLoaded', () => {
   const langBtnEn = document.getElementById('langBtnEn');
   const langBtnHinglish = document.getElementById('langBtnHinglish');
   const chapterABtn = document.getElementById('chapterABtn');
+  const chapterDBtn = document.getElementById('chapterDBtn');
+
+  // Visibility manager for A & D chat icons:
+  // "A" icon: ONLY inside "Man's Search for Meaning"
+  // "D" icon: ONLY inside "Starting Strength" (in the exact same position)
+  // Both icons are completely hidden from all other books and from the library.
+  function updateChatButtonsVisibility(bookId) {
+    if (chapterABtn) {
+      chapterABtn.style.display = (bookId === 'mans-search-for-meaning') ? 'flex' : 'none';
+    }
+    if (chapterDBtn) {
+      chapterDBtn.style.display = (bookId === 'starting-strength') ? 'flex' : 'none';
+    }
+    if (window.setDChatVisibility) {
+      window.setDChatVisibility(false);
+    }
+  }
 
   // State
   let currentBook = null;
@@ -480,13 +497,10 @@ document.addEventListener('DOMContentLoaded', () => {
     homeView.style.display = 'none';
     readerView.style.display = 'flex';
 
-    // Display floating D icon on the side of the book reading page
-    if (window.setDChatVisibility) {
-      window.setDChatVisibility(true);
-    } else {
-      const widget = document.getElementById('dChatWidget');
-      if (widget) widget.classList.add('visible');
-    }
+    // Display chat icon strictly according to current book:
+    // "A" icon only for "Man's Search for Meaning"
+    // "D" icon only for "Starting Strength"
+    updateChatButtonsVisibility(book.id);
 
     // Scroll restoration: restore exact reading scroll position if provided
     if (initialScroll !== null && !isNaN(initialScroll) && initialScroll > 0) {
@@ -604,13 +618,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (modal) modal.classList.remove('open');
     }
 
-    // Hide floating D icon when returning to library homepage
-    if (window.setDChatVisibility) {
-      window.setDChatVisibility(false);
-    } else {
-      const widget = document.getElementById('dChatWidget');
-      if (widget) widget.classList.remove('visible');
-    }
+    // Hide chat icons when returning to library homepage
+    updateChatButtonsVisibility(null);
 
     if (pushHistory) {
       history.pushState({ view: 'library' }, document.title, window.location.pathname);
@@ -690,6 +699,15 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  if (chapterDBtn) {
+    chapterDBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.openChatPasswordModal) {
+        window.openChatPasswordModal('D');
+      }
+    });
+  }
+
   // Initial Library Render & History State
   if (!history.state || history.state.view !== 'library') {
     history.replaceState({ view: 'library' }, document.title, window.location.pathname);
@@ -729,10 +747,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   } else {
-    // Hide D icon on main library page
-    if (window.setDChatVisibility) {
-      window.setDChatVisibility(false);
-    }
+    // Hide chat icons on main library page
+    updateChatButtonsVisibility(null);
   }
 
   // Ensure password modal is completely closed on initial page load or restore

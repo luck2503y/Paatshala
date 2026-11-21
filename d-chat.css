@@ -10,14 +10,14 @@
   bottom: 24px;
   right: 24px;
   z-index: 1000;
-  display: none; /* Completely hidden on main homepage; displayed only inside book reader */
+  display: none !important; /* D icon is now placed inside chapter heading in Starting Strength */
   flex-direction: column;
   align-items: flex-end;
   justify-content: center;
 }
 
 .d-chat-widget.visible {
-  display: flex;
+  display: none !important;
 }
 
 .floating-d-btn {
