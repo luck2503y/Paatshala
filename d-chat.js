@@ -123,9 +123,17 @@
     const dPwdErrorMsg = document.getElementById('dPwdErrorMsg');
     const dPwdSubmitBtn = document.getElementById('dPwdSubmitBtn');
     const dBtnPing = document.getElementById('dBtnPing');
+    const dPwdTitle = document.getElementById('dPwdTitle');
 
-    // 1. Open Password Modal when clicking "D"
-    function openPasswordModal() {
+    let currentParticipantRole = 'D';
+
+    // 1. Open Password Modal when clicking "D" or "A"
+    function openPasswordModal(participant = 'D') {
+      currentParticipantRole = participant === 'A' ? 'A' : 'D';
+      if (dPwdTitle) {
+        dPwdTitle.textContent = `Participant ${currentParticipantRole} Chat Access`;
+      }
+
       // Capture source book reading state before opening password modal
       if (window.getCurrentReadingState) {
         const state = window.getCurrentReadingState();
@@ -134,6 +142,9 @@
         }
       }
       if (dBtnPing) dBtnPing.style.display = 'none';
+      const aBtnPing = document.getElementById('aBtnPing');
+      if (aBtnPing) aBtnPing.style.display = 'none';
+
       dPwdModalBackdrop.classList.add('open');
       dPwdErrorMsg.classList.remove('visible');
       dPwdErrorMsg.textContent = '';
@@ -144,17 +155,51 @@
       }, 150);
     }
 
+    // Expose modal controllers globally
+    window.openChatPasswordModal = openPasswordModal;
+    window.closeChatPasswordModal = closePasswordModal;
+
     // 2. Close Modal
     function closePasswordModal() {
       dPwdModalBackdrop.classList.remove('open');
+      if (dPwdErrorMsg) {
+        dPwdErrorMsg.classList.remove('visible');
+        dPwdErrorMsg.textContent = '';
+      }
+      if (dPwdInputWrap) {
+        dPwdInputWrap.classList.remove('error');
+      }
     }
+
+    // Ensure modal is strictly closed on page navigation, back/forward or BFCache restore
+    window.addEventListener('pageshow', closePasswordModal);
+    window.addEventListener('popstate', closePasswordModal);
+    window.addEventListener('pagehide', closePasswordModal);
 
     if (floatingDBtn) {
       floatingDBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        openPasswordModal();
+        openPasswordModal('D');
       });
     }
+
+    // Bind click event to "A" icon
+    const chapterABtn = document.getElementById('chapterABtn');
+    if (chapterABtn) {
+      chapterABtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        openPasswordModal('A');
+      });
+    }
+
+    // Delegated click listener for "A" icon (handles dynamic chapter updates)
+    document.addEventListener('click', (e) => {
+      const aBtn = e.target.closest('#chapterABtn, .chapter-a-btn');
+      if (aBtn) {
+        e.stopPropagation();
+        openPasswordModal('A');
+      }
+    });
 
     if (dPwdModalClose) {
       dPwdModalClose.addEventListener('click', closePasswordModal);
@@ -229,8 +274,9 @@
         const accessTicket = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         sessionStorage.setItem('paatshala_chat_authorized_ticket', accessTicket);
         sessionStorage.setItem('paatshala_chat_authenticated', 'true');
+        sessionStorage.setItem('paatshala_chat_user', currentParticipantRole);
 
-        let queryParams = 'auth=' + accessTicket;
+        let queryParams = 'auth=' + accessTicket + '&user=' + encodeURIComponent(currentParticipantRole);
         try {
           const storedSource = sessionStorage.getItem('paatshala_chat_source_book');
           if (storedSource) {
@@ -242,9 +288,20 @@
         } catch (e) {}
 
         setTimeout(() => {
+          // Immediately close and reset password modal BEFORE navigating away
+          closePasswordModal();
+          dPwdSubmitBtn.disabled = false;
+          dPwdSubmitBtn.style.background = '';
+          dPwdSubmitBtn.innerHTML = `
+            <span>Unlock &amp; Enter Chat</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          `;
           // Open dedicated chat page strictly passing the authorized ticket and source book params
           window.location.href = 'chat.html?' + queryParams;
-        }, 400);
+        }, 350);
 
       } else {
         // Incorrect Password

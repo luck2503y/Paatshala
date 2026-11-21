@@ -49,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const readingProgressFill = document.getElementById('readingProgressFill');
   const langBtnEn = document.getElementById('langBtnEn');
   const langBtnHinglish = document.getElementById('langBtnHinglish');
+  const chapterABtn = document.getElementById('chapterABtn');
 
   // State
   let currentBook = null;
@@ -599,6 +600,14 @@ document.addEventListener('DOMContentLoaded', () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     renderBooksGrid();
 
+    // Ensure any password modal is closed and cannot linger
+    if (window.closeChatPasswordModal) {
+      window.closeChatPasswordModal();
+    } else {
+      const modal = document.getElementById('dPwdModalBackdrop');
+      if (modal) modal.classList.remove('open');
+    }
+
     // Hide floating D icon when returning to library homepage
     if (window.setDChatVisibility) {
       window.setDChatVisibility(false);
@@ -614,24 +623,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
   readerBackBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (window.location.hash) {
-      history.back();
-    } else {
-      returnToLibrary(true);
-    }
+    e.stopPropagation();
+    returnToLibrary(true);
   });
 
   finishReadingBtn.addEventListener('click', (e) => {
     e.preventDefault();
-    if (window.location.hash) {
-      history.back();
-    } else {
-      returnToLibrary(true);
-    }
+    e.stopPropagation();
+    returnToLibrary(true);
   });
 
   // Browser Back & Forward Popstate Handler (Keeps navigation between Library & Book pages)
   window.addEventListener('popstate', (e) => {
+    // Close password modal on any navigation
+    if (window.closeChatPasswordModal) {
+      window.closeChatPasswordModal();
+    } else {
+      const modal = document.getElementById('dPwdModalBackdrop');
+      if (modal) modal.classList.remove('open');
+    }
+
     const state = e.state;
     const hash = window.location.hash;
 
@@ -674,6 +685,15 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
+  if (chapterABtn) {
+    chapterABtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (window.openChatPasswordModal) {
+        window.openChatPasswordModal('A');
+      }
+    });
+  }
+
   // Initial Library Render & History State
   if (!history.state || history.state.view !== 'library') {
     history.replaceState({ view: 'library' }, document.title, window.location.pathname);
@@ -694,7 +714,15 @@ document.addEventListener('DOMContentLoaded', () => {
   if (returnState && returnState.bookId) {
     const matchedBook = BOOKS_DATA.find(b => b.id === returnState.bookId);
     if (matchedBook) {
-      openBookReader(matchedBook, true, returnState.chapterIndex || 0, returnState.scrollY || 0);
+      // Restore reader cleanly without pushing duplicate history entries
+      openBookReader(matchedBook, false, returnState.chapterIndex || 0, returnState.scrollY || 0);
+      if (window.history && window.history.replaceState) {
+        history.replaceState(
+          { view: 'reader', bookId: matchedBook.id, chapter: returnState.chapterIndex || 0 },
+          document.title,
+          window.location.pathname + '#book=' + encodeURIComponent(matchedBook.id) + '&ch=' + (returnState.chapterIndex || 0)
+        );
+      }
     }
   } else if (window.location.hash && window.location.hash.startsWith('#book=')) {
     const parsed = parseBookHash(window.location.hash);
@@ -710,4 +738,14 @@ document.addEventListener('DOMContentLoaded', () => {
       window.setDChatVisibility(false);
     }
   }
+
+  // Ensure password modal is completely closed on initial page load or restore
+  if (window.closeChatPasswordModal) {
+    window.closeChatPasswordModal();
+  }
+  window.addEventListener('pageshow', () => {
+    if (window.closeChatPasswordModal) {
+      window.closeChatPasswordModal();
+    }
+  });
 });

@@ -14,16 +14,23 @@
       const urlParams = new URLSearchParams(window.location.search);
       const authParam = urlParams.get('auth');
       const storedTicket = sessionStorage.getItem('paatshala_chat_authorized_ticket');
+      const storedAuth = sessionStorage.getItem('paatshala_chat_authenticated');
 
-      const isAuthorized = authParam && storedTicket && authParam === storedTicket;
+      const isAuthorized = (authParam && storedTicket && authParam === storedTicket) || (storedAuth === 'true');
 
       if (!isAuthorized) {
-        // Chat page must ONLY be accessible through the floating D icon + password.
-        // Direct URLs, browser Back/Forward buttons, or normal navigation are blocked!
+        // Chat page must ONLY be accessible through the floating D / A icon + password.
         sessionStorage.removeItem('paatshala_chat_authorized_ticket');
         sessionStorage.removeItem('paatshala_chat_authenticated');
+        sessionStorage.removeItem('paatshala_chat_user');
         window.location.replace('home.html');
         return;
+      }
+
+      // Capture participant user ('A' or 'D')
+      const userParam = urlParams.get('user');
+      if (userParam === 'A' || userParam === 'D') {
+        sessionStorage.setItem('paatshala_chat_user', userParam);
       }
 
       // Capture source book parameters if coming from reader
@@ -38,12 +45,15 @@
         }));
       }
 
-      // Immediately consume ticket so browser Back/Forward CANNOT reuse it
+      // Consume one-time ticket
       sessionStorage.removeItem('paatshala_chat_authorized_ticket');
 
-      // Clean query parameter from address bar and history without page reload
+      const activeUser = userParam || sessionStorage.getItem('paatshala_chat_user') || 'A';
+      sessionStorage.setItem('paatshala_chat_user', activeUser);
+
+      // Clean query parameter while preserving user identity
       if (window.history && window.history.replaceState) {
-        window.history.replaceState({ page: 'chat' }, document.title, 'chat.html');
+        window.history.replaceState({ page: 'chat', user: activeUser }, document.title, 'chat.html?user=' + activeUser);
       }
     })();
   </script>
@@ -71,11 +81,12 @@
         <!-- Current Active Contact Profile -->
         <div class="active-contact-profile" id="activeContactBtn">
           <div class="contact-avatar-wrap">
-            <img src="eagle-avatar.svg" alt="Eagle Avatar" class="contact-avatar" id="activeContactAvatar">
+            <img src="" alt="Contact Avatar" class="contact-avatar" id="activeContactAvatar">
             <span class="active-online-dot" id="activeOnlineDot"></span>
           </div>
           <div class="contact-info-col">
-            <h2 class="active-contact-name" id="activeContactName">Your Buddy</h2>
+            <h2 class="active-contact-name" id="activeContactName">D</h2>
+            <p class="active-contact-status" id="activeStatusText" style="display:block;">Online</p>
           </div>
         </div>
       </div>

@@ -1,171 +1,27 @@
 /**
  * Paatshala - Dedicated Active Chat Room Controller
- * Supports viewing messages, typing, sending, and continuous real-time conversations.
+ * Supports two-way real-time communication between Participant A and Participant D
+ * with server database persistence, real-time sync, WhatsApp ticks, and message actions.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-  // Persistent Chat Storage Keys & Helpers
-  const STORAGE_KEY_PREFIX = 'paatshala_chat_thread_';
-  const CLEARED_KEY_PREFIX = 'paatshala_chat_cleared_';
+document.addEventListener('DOMContentLoaded', async () => {
+  // 1. Identify Current Participant & Contact
+  const urlParams = new URLSearchParams(window.location.search);
+  const currentUser = (urlParams.get('user') || sessionStorage.getItem('paatshala_chat_user') || 'A').toUpperCase();
+  const otherUser = currentUser === 'A' ? 'D' : 'A';
 
-  function saveMessages(contactId, messages) {
-    try {
-      localStorage.setItem(STORAGE_KEY_PREFIX + contactId, JSON.stringify(messages || []));
-    } catch (e) {
-      console.error('Failed to save chat to localStorage:', e);
-    }
-  }
+  // Ensure current user session is stored
+  sessionStorage.setItem('paatshala_chat_user', currentUser);
 
-  function loadMessages(contactId, initialMessages) {
-    try {
-      const isCleared = localStorage.getItem(CLEARED_KEY_PREFIX + contactId);
-      const saved = localStorage.getItem(STORAGE_KEY_PREFIX + contactId);
+  // Storage Keys & Constants
+  const SHARED_STORAGE_KEY = 'paatshala_shared_chat_messages';
+  const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_chat_sync') : null;
 
-      // If this conversation was cleared by user, permanently keep it empty
-      // unless new messages were sent after clearing
-      if (isCleared === 'true') {
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (Array.isArray(parsed)) {
-            return parsed.map((m, idx) => ({
-              ...m,
-              id: m.id || ('msg_' + Date.now() + '_' + idx),
-              status: m.sender === 'me' ? (m.status || 'read') : undefined
-            }));
-          }
-          return [];
-        }
-        return [];
-      }
-
-      // If user has saved messages in localStorage, load them
-      if (saved !== null) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.map((m, idx) => ({
-            ...m,
-            id: m.id || ('msg_' + Date.now() + '_' + idx),
-            status: m.sender === 'me' ? (m.status || 'read') : undefined
-          }));
-        }
-        return [];
-      }
-    } catch (e) {
-      console.error('Failed to load chat from localStorage:', e);
-    }
-
-    // First time visitor fallback
-    return Array.isArray(initialMessages)
-      ? initialMessages.map((m, idx) => ({
-          ...m,
-          id: m.id || ('init_' + idx),
-          status: m.sender === 'me' ? (m.status || 'read') : undefined
-        }))
-      : [];
-  }
-
-  // Contacts Data & Initial Conversation Histories
-  const CONTACTS = [
-    {
-      id: 'buddy',
-      name: 'Your Buddy',
-      role: '',
-      avatar: 'eagle-avatar.svg',
-      online: true,
-      statusText: '',
-      initialMessages: [
-        { sender: 'them', text: 'Namaste! 🦅 Main hoon aapka Buddy! Aaj hum kaunsi educational story ya topic discuss karein?', time: '10:35 AM' },
-        { sender: 'me', text: 'Hey Buddy! Main Chandrayaan-3 aur Constitution wali stories padh raha tha.', time: '10:38 AM', status: 'read' },
-        { sender: 'them', text: 'Arrey wah! Dono hi stories bohot inspiring hain. Agar koi bhi question ya doubt ho, toh bejhijhak mujhse poocho! 🦅', time: '10:40 AM' }
-      ]
-    },
-    {
-      id: 'priya',
-      name: 'Priya Patel',
-      role: 'Study Lead',
-      avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=120&q=80',
-      online: true,
-      statusText: 'Online • In Study Room',
-      initialMessages: [
-        { sender: 'them', text: 'Namaste! Are you attending the online mathematics quiz this Saturday?', time: '09:50 AM' },
-        { sender: 'me', text: 'Yes Priya, revision start kar diya hai calculus ka.', time: '10:02 AM', status: 'read' },
-        { sender: 'them', text: 'Assignment submit kar diya tune?', time: '10:15 AM' }
-      ]
-    },
-    {
-      id: 'dr_verma',
-      name: 'Dr. Alok Verma',
-      role: 'Faculty Mentor',
-      avatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=120&q=80',
-      online: false,
-      statusText: 'Offline • Last seen 9:30 AM',
-      initialMessages: [
-        { sender: 'them', text: 'Please ensure all students review the Constitution Preamble chapter before Friday.', time: 'Yesterday' },
-        { sender: 'me', text: 'Understood Sir, we will review the fundamental duties as well.', time: 'Yesterday', status: 'sent' },
-        { sender: 'them', text: "Tomorrow's lecture is rescheduled to 11 AM in Hall 3.", time: '09:30 AM' }
-      ]
-    },
-    {
-      id: 'neha',
-      name: 'Neha Singh',
-      role: 'Design Club',
-      avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80',
-      online: true,
-      statusText: 'Online • Active now',
-      initialMessages: [
-        { sender: 'them', text: 'We are designing posters for the Science Exhibition next week!', time: 'Nov 19' },
-        { sender: 'them', text: 'Are you joining the hackathon team this year?', time: 'Nov 19' }
-      ]
-    },
-    {
-      id: 'campus_hub',
-      name: 'Campus Coding Hub',
-      role: 'Group • 32 Students',
-      avatar: 'https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?auto=format&fit=crop&w=120&q=80',
-      online: true,
-      statusText: '5 members online',
-      initialMessages: [
-        { sender: 'them', text: 'Kavya: Shared presentation_final.pdf with the group.', time: 'Nov 18' },
-        { sender: 'them', text: 'Rohan: Great work on the front-end layout everyone!', time: 'Nov 18' }
-      ]
-    }
-  ];
-
-  // Initialize persistent messages for each contact
-  CONTACTS.forEach((c) => {
-    c.messages = loadMessages(c.id, c.initialMessages);
-  });
-
-  // Emojis Dataset by Category
-  const EMOJI_CATEGORIES = {
-    smileys: [
-      '😀','😃','😄','😁','😆','😅','😂','🤣','🥹','😊','😇','🙂','🙃','😉','😌','😍',
-      '🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🫣','🤫','🤔','🫡',
-      '🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😔','😪','🤤','😴','😷','🤒',
-      '🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕',
-      '😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖'
-    ],
-    gestures: [
-      '👍','👎','👏','🙌','👐','🤝','🤛','🤜','🤞','✌️','🤟','🤘','👌','🤌','🤏','👈',
-      '👉','👆','👇','☝️','✋','🤚','🖐️','🖖','👋','🤙','💪','🦾','🤳','🙏','✍️','🧑‍🎓',
-      '👨‍🎓','👩‍🎓','🧑‍🏫','👨‍🏫','👩‍🏫','🧑‍💻','👨‍💻','👩‍💻','🙋','🙋‍♂️','🙋‍♀️'
-    ],
-    study: [
-      '📚','📖','📕','📗','📘','📙','📓','📔','📒','📝','✏️','🖊️','🖋️','🖌️','🖍️','📐',
-      '📏','🖇️','📎','📌','📍','✂️','🗂️','📂','📁','📋','📊','📈','📉','🎒','🎓','🏫',
-      '🏛️','🔬','🔭','🧪','🧮','💻','🖥️','📱','💡','🎯','🏆','🥇','🥈','🥉','🎖️','🏅'
-    ],
-    nature: [
-      '🦅','🕊️','🐅','🦁','🐘','🦚','🦜','🐎','🦌','🌸','🌺','🪷','🌻','🌹','🌷','🌱',
-      '🌿','🍀','🌴','🌳','🌲','☀️','🌙','⭐','🌟','✨','⚡','🔥','🌈','🌊','🌍','🌎',
-      '🌏','🚀','🛰️','🇮🇳'
-    ],
-    symbols: [
-      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💖','💗','💓','💞','💕','💌','💘',
-      '💝','💟','💯','💢','💬','💭','🗯️','💤','💥','🎉','🎊','✨','🔔','🔕','✅','❌',
-      '❓','❗','⚠️'
-    ]
-  };
+  // State
+  let sharedMessages = [];
+  let pendingImageData = null;
+  let currentEmojiCategory = 'smileys';
+  let activeActionMsgId = null;
 
   // DOM Elements
   const activeContactAvatar = document.getElementById('activeContactAvatar');
@@ -227,13 +83,47 @@ document.addEventListener('DOMContentLoaded', () => {
   const editMsgInput = document.getElementById('editMsgInput');
   const editMsgCancelBtn = document.getElementById('editMsgCancelBtn');
 
-  // State
-  let currentContact = CONTACTS[0]; // Default: Your Buddy
-  let pendingImageData = null;
-  let currentEmojiCategory = 'smileys';
-  let activeActionMsgId = null;
+  // Emojis Dataset by Category
+  const EMOJI_CATEGORIES = {
+    smileys: [
+      '😀','😃','😄','😁','😆','😅','😂','🤣','🥹','😊','😇','🙂','🙃','😉','😌','😍',
+      '🥰','😘','😗','😙','😚','😋','😛','😜','🤪','😝','🤑','🤗','🫣','🤫','🤔','🫡',
+      '🤐','🤨','😐','😑','😶','😏','😒','🙄','😬','🤥','😔','😪','🤤','😴','😷','🤒',
+      '🤕','🤢','🤮','🤧','🥵','🥶','🥴','😵','🤯','🤠','🥳','🥸','😎','🤓','🧐','😕',
+      '😟','🙁','😮','😯','😲','😳','🥺','😦','😧','😨','😰','😥','😢','😭','😱','😖'
+    ],
+    gestures: [
+      '👍','👎','👏','🙌','👐','🤝','🤛','🤜','🤞','✌️','🤟','🤘','👌','🤌','🤏','👈',
+      '👉','👆','👇','☝️','✋','🤚','🖐️','🖖','👋','🤙','💪','🦾','🤳','🙏','✍️','🧑‍🎓',
+      '👨‍🎓','👩‍🎓','🧑‍🏫','👨‍🏫','👩‍🏫','🧑‍💻','👨‍💻','👩‍💻','🙋','🙋‍♂️','🙋‍♀️'
+    ],
+    study: [
+      '📚','📖','📕','📗','📘','📙','📓','📔','📒','📝','✏️','🖊️','🖋️','🖌️','🖍️','📐',
+      '📏','🖇️','📎','📌','📍','✂️','🗂️','📂','📁','📋','📊','📈','📉','🎒','🎓','🏫',
+      '🏛️','🔬','🔭','🧪','🧮','💻','🖥️','📱','💡','🎯','🏆','🥇','🥈','🥉','🎖️','🏅'
+    ],
+    nature: [
+      '🦅','🕊️','🐅','🦁','🐘','🦚','🦜','🐎','🦌','🌸','🌺','🪷','🌻','🌹','🌷','🌱',
+      '🌿','🍀','🌴','🌳','🌲','☀️','🌙','⭐','🌟','✨','⚡','🔥','🌈','🌊','🌍','🌎',
+      '🌏','🚀','🛰️','🇮🇳'
+    ],
+    symbols: [
+      '❤️','🧡','💛','💚','💙','💜','🖤','🤍','🤎','💖','💗','💓','💞','💕','💌','💘',
+      '💝','💟','💯','💢','💬','💭','🗯️','💤','💥','🎉','🎊','✨','🔔','🔕','✅','❌',
+      '❓','❗','⚠️'
+    ]
+  };
 
-  // 1. Theme Management
+  // 2. Participant Avatars & Names Configuration
+  function getParticipantAvatar(letter) {
+    return letter === 'A' ? 'panda-avatar.svg' : 'caretaker-avatar.svg';
+  }
+
+  function getParticipantName(letter) {
+    return letter === 'A' ? 'A' : 'D';
+  }
+
+  // 3. Theme Management
   function applyTheme(theme) {
     document.body.setAttribute('data-theme', theme);
     localStorage.setItem('paatshala-theme', theme);
@@ -248,7 +138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Back Button Navigation - cleanly returns to the source book reading page
+  // 4. Back Button Navigation - cleanly returns to the source book reading page
   const chatBackBtn = document.getElementById('chatBackBtn') || document.querySelector('.chat-back-btn');
   if (chatBackBtn) {
     chatBackBtn.addEventListener('click', (e) => {
@@ -272,10 +162,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Fallback to URL search parameters if still present
       if (!targetBookId) {
-        const urlParams = new URLSearchParams(window.location.search);
-        targetBookId = urlParams.get('fromBook');
-        if (urlParams.get('ch')) targetChapter = parseInt(urlParams.get('ch'), 10) || 0;
-        if (urlParams.get('scroll')) targetScroll = parseInt(urlParams.get('scroll'), 10) || 0;
+        const currentUrlParams = new URLSearchParams(window.location.search);
+        targetBookId = currentUrlParams.get('fromBook');
+        if (currentUrlParams.get('ch')) targetChapter = parseInt(currentUrlParams.get('ch'), 10) || 0;
+        if (currentUrlParams.get('scroll')) targetScroll = parseInt(currentUrlParams.get('scroll'), 10) || 0;
       }
 
       // Store return intent in sessionStorage so home.js restores exact chapter and scroll position
@@ -301,13 +191,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Clear auth ticket on pagehide/unload so back/forward cannot re-enter chat without D icon password
+  // Clear auth ticket on pagehide/unload so back/forward cannot re-enter chat without password
   window.addEventListener('pagehide', () => {
     sessionStorage.removeItem('paatshala_chat_authorized_ticket');
     sessionStorage.removeItem('paatshala_chat_authenticated');
   });
 
-  // 2. Helper: Current Time String
+  // 5. Time and Tick Formatting Helpers
   function getCurrentTimeString() {
     const now = new Date();
     let hours = now.getHours();
@@ -317,10 +207,9 @@ document.addEventListener('DOMContentLoaded', () => {
     return `${hours}:${minutes} ${ampm}`;
   }
 
-  // Helper: WhatsApp-style Delivery & Read Receipt Tick Icons
   function getTickSvgHtml(status) {
     if (status === 'sent') {
-      // 1. Single Grey Tick (✓): Sent but not yet delivered
+      // Single Grey Tick (✓): Sent to server
       return `
         <svg class="status-tick single-tick grey" viewBox="0 0 16 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Sent" title="Sent (Single Grey Tick)">
           <path d="M2.5 5.5L6 9L13.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -328,7 +217,7 @@ document.addEventListener('DOMContentLoaded', () => {
       `;
     }
     if (status === 'delivered') {
-      // 2. Double Grey Tick (✓✓): Delivered to recipient's device
+      // Double Grey Tick (✓✓): Delivered
       return `
         <svg class="status-tick double-tick grey" viewBox="0 0 19 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Delivered" title="Delivered (Double Grey Tick)">
           <path d="M1.5 5.5L5 9L12.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -336,7 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </svg>
       `;
     }
-    // 3. Double Blue Tick (✓✓): Read and seen by recipient
+    // Double Blue Tick (✓✓): Read & Seen
     return `
       <svg class="status-tick double-tick blue" viewBox="0 0 19 11" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="Read" title="Read (Double Blue Tick)">
         <path d="M1.5 5.5L5 9L12.5 1.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -345,95 +234,134 @@ document.addEventListener('DOMContentLoaded', () => {
     `;
   }
 
-  // Real-time Delivery & Read Receipt Status Updater
-  function updateMessageStatus(msgId, newStatus) {
-    let targetContact = currentContact;
-    let msg = targetContact && targetContact.messages ? targetContact.messages.find(m => m.id === msgId) : null;
-
-    // Fallback search across contacts if user switched contacts mid-flight
-    if (!msg) {
-      for (const c of CONTACTS) {
-        const found = c.messages && c.messages.find(m => m.id === msgId);
-        if (found) {
-          targetContact = c;
-          msg = found;
-          break;
-        }
-      }
-    }
-
-    if (!msg) return;
-
-    msg.status = newStatus;
-    saveMessages(targetContact.id, targetContact.messages);
-
-    // If currently visible in active chat stream, update DOM in real-time
-    const row = messagesStream.querySelector(`.chat-bubble-row[data-msg-id="${msgId}"]`);
-    if (row) {
-      const tickWrap = row.querySelector('.bubble-tick-wrap');
-      if (tickWrap) {
-        tickWrap.innerHTML = getTickSvgHtml(newStatus);
-      }
+  function scrollChatToBottom() {
+    if (chatThreadContainer) {
+      chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
     }
   }
 
-  // 3. Render Active Contact Info & Messages
-  function renderActiveContact(contact) {
-    currentContact = contact;
+  function escapeHTML(str) {
+    const p = document.createElement('p');
+    p.appendChild(document.createTextNode(str || ''));
+    return p.innerHTML;
+  }
 
-    if (activeContactAvatar) activeContactAvatar.src = contact.avatar;
-    if (activeContactName) activeContactName.textContent = contact.name;
-    if (activeContactRole) activeContactRole.textContent = contact.role || '';
+  // 6. Server Database & Storage Sync Functions
+  async function fetchServerMessages() {
+    try {
+      const res = await fetch('/api/messages?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.messages)) {
+          return data.messages;
+        }
+      }
+    } catch (e) {
+      // Network or offline fallback
+    }
+    try {
+      const local = localStorage.getItem(SHARED_STORAGE_KEY);
+      if (local) {
+        const parsed = JSON.parse(local);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  }
+
+  async function postServerAction(actionPayload) {
+    try {
+      const res = await fetch('/api/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(actionPayload)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && Array.isArray(data.messages)) {
+          return data.messages;
+        }
+      }
+    } catch (e) {
+      console.warn('Server sync post error, using local state:', e);
+    }
+    return null;
+  }
+
+  function saveLocalSharedMessages() {
+    try {
+      localStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(sharedMessages));
+      localStorage.setItem('paatshala_chat_version', Date.now().toString());
+    } catch (e) {
+      console.error('Failed to save to localStorage:', e);
+    }
+  }
+
+  // 7. Render Header & Profile
+  function setupChatHeader() {
+    const avatarSrc = getParticipantAvatar(otherUser);
+    const nameDisplay = getParticipantName(otherUser);
+
+    if (activeContactAvatar) {
+      activeContactAvatar.src = avatarSrc;
+      activeContactAvatar.alt = nameDisplay;
+    }
+    if (activeContactName) {
+      activeContactName.textContent = nameDisplay;
+    }
     if (activeStatusText) {
-      activeStatusText.textContent = contact.statusText || '';
-      activeStatusText.style.display = contact.statusText ? 'block' : 'none';
+      activeStatusText.textContent = 'Online';
+      activeStatusText.style.display = 'block';
     }
     if (activeOnlineDot) {
-      activeOnlineDot.className = `active-online-dot ${contact.online ? '' : 'offline'}`;
+      activeOnlineDot.className = 'active-online-dot';
     }
+    if (messageTextInput) {
+      messageTextInput.placeholder = `Message ${nameDisplay}...`;
+    }
+  }
 
-    // Render Messages Stream
+  // 8. Render Messages Stream
+  function renderChatStream() {
+    if (!messagesStream) return;
     messagesStream.innerHTML = '';
-    
-    if (!contact.messages || contact.messages.length === 0) {
+
+    // Filter out messages deleted for current user
+    const visibleMessages = sharedMessages.filter(m => {
+      if (m.deletedFor && Array.isArray(m.deletedFor) && m.deletedFor.includes(currentUser)) {
+        return false;
+      }
+      return true;
+    });
+
+    if (visibleMessages.length === 0) {
       if (emptyChatState) emptyChatState.style.display = 'flex';
       if (chatDatePill) chatDatePill.style.display = 'none';
     } else {
       if (emptyChatState) emptyChatState.style.display = 'none';
       if (chatDatePill) chatDatePill.style.display = 'flex';
-      contact.messages.forEach((msg) => {
-        appendBubbleToUI(msg.text, msg.sender === 'me', msg.time, msg.image, msg.id, msg.isEdited, msg.status);
+
+      visibleMessages.forEach(msg => {
+        const isOutgoing = msg.sender === currentUser;
+        appendBubbleToUI(
+          msg.text,
+          isOutgoing,
+          msg.time,
+          msg.image,
+          msg.id,
+          msg.isEdited,
+          msg.status,
+          msg.sender
+        );
       });
     }
 
     scrollChatToBottom();
   }
 
-  // 4. Clear Current Chat
-  function clearCurrentChat() {
-    if (currentContact) {
-      currentContact.messages = [];
-      saveMessages(currentContact.id, []);
-      try {
-        localStorage.setItem(CLEARED_KEY_PREFIX + currentContact.id, 'true');
-        localStorage.setItem(STORAGE_KEY_PREFIX + currentContact.id, JSON.stringify([]));
-      } catch (e) {
-        console.error('Error saving cleared state:', e);
-      }
-    }
-    clearPendingAttachment();
-    messagesStream.innerHTML = '';
-    if (emptyChatState) emptyChatState.style.display = 'flex';
-    if (chatDatePill) chatDatePill.style.display = 'none';
-    if (chatOptionsDropdown) chatOptionsDropdown.classList.remove('open');
-    if (contactsDrawerBackdrop) contactsDrawerBackdrop.classList.remove('open');
-    if (messageTextInput) messageTextInput.focus();
-  }
-
-  // 4. Append Message Bubble to UI
-  function appendBubbleToUI(text, isOutgoing, timeStr, imageSrc, msgId, isEdited, status) {
+  // 9. Append Bubble DOM Element
+  function appendBubbleToUI(text, isOutgoing, timeStr, imageSrc, msgId, isEdited, status, senderRole) {
     const time = timeStr || getCurrentTimeString();
-
     const row = document.createElement('div');
     row.className = `chat-bubble-row ${isOutgoing ? 'outgoing' : 'incoming'}`;
     if (msgId) row.setAttribute('data-msg-id', msgId);
@@ -455,7 +383,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const editedHtml = isEdited ? `<span class="edited-badge">• Edited</span>` : '';
 
     if (isOutgoing) {
-      const tickHtml = getTickSvgHtml(status || 'read');
+      const tickHtml = getTickSvgHtml(status || 'sent');
       row.innerHTML = `
         <div class="chat-bubble ${imageSrc ? 'has-image' : ''}">
           ${imageHtml}
@@ -466,18 +394,15 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
-
-      // Attach Long-Press action sheet to outgoing message sent by me
-      const bubbleEl = row.querySelector('.chat-bubble');
-      if (bubbleEl && msgId) {
-        attachLongPressListener(bubbleEl, () => {
-          openMessageActionSheet(msgId);
-        });
-      }
     } else {
+      const senderLetter = (senderRole === 'A' || senderRole === 'D') ? senderRole : otherUser;
+      const avatarSrc = getParticipantAvatar(senderLetter);
+      const nameDisplay = getParticipantName(senderLetter);
+
       row.innerHTML = `
-        <img src="${currentContact.avatar}" alt="${currentContact.name}" class="chat-bubble-avatar">
+        <img src="${avatarSrc}" alt="${nameDisplay}" class="chat-bubble-avatar">
         <div class="chat-bubble ${imageSrc ? 'has-image' : ''}">
+          <span class="bubble-sender-name">${nameDisplay}</span>
           ${imageHtml}
           ${textHtml}
           <div class="bubble-meta">
@@ -485,6 +410,14 @@ document.addEventListener('DOMContentLoaded', () => {
           </div>
         </div>
       `;
+    }
+
+    // Attach Long-Press action sheet to all message bubbles
+    const bubbleEl = row.querySelector('.chat-bubble');
+    if (bubbleEl && msgId) {
+      attachLongPressListener(bubbleEl, () => {
+        openMessageActionSheet(msgId);
+      });
     }
 
     // Attach lightbox on image click
@@ -499,10 +432,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     messagesStream.appendChild(row);
-    scrollChatToBottom();
   }
 
-  // 5. Long-Press Detection Helper
+  // 10. Long-Press Detection Helper
   function attachLongPressListener(element, callback) {
     let pressTimer = null;
     let startX = 0;
@@ -530,7 +462,7 @@ document.addEventListener('DOMContentLoaded', () => {
           try { navigator.vibrate(40); } catch (err) {}
         }
         callback(e);
-      }, 500);
+      }, 450);
     }
 
     function handleMove(e) {
@@ -578,10 +510,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Message Action Sheet & Edit Modal Handlers
+  // 11. Message Action Sheet (Edit, Delete for Me, Delete for Everyone)
   function openMessageActionSheet(msgId) {
     activeActionMsgId = msgId;
-    const msg = currentContact.messages.find(m => m.id === msgId);
+    const msg = sharedMessages.find(m => m.id === msgId);
     if (!msg) return;
 
     if (msgActionPreviewText) {
@@ -592,6 +524,11 @@ document.addEventListener('DOMContentLoaded', () => {
       } else {
         msgActionPreviewText.textContent = 'Message';
       }
+    }
+
+    // Only allow editing if current user sent this message
+    if (msgActionEditBtn) {
+      msgActionEditBtn.style.display = (msg.sender === currentUser) ? 'flex' : 'none';
     }
 
     if (msgActionBackdrop) {
@@ -608,18 +545,40 @@ document.addEventListener('DOMContentLoaded', () => {
 
   function deleteSelectedMessage(isForEveryone) {
     if (!activeActionMsgId) return;
-
-    currentContact.messages = currentContact.messages.filter(m => m.id !== activeActionMsgId);
-    saveMessages(currentContact.id, currentContact.messages);
-
+    const targetId = activeActionMsgId;
     closeMessageActionSheet();
-    renderActiveContact(currentContact);
+
+    if (isForEveryone) {
+      // 1. Delete for Everyone: completely remove message
+      sharedMessages = sharedMessages.filter(m => m.id !== targetId);
+      saveLocalSharedMessages();
+      postServerAction({ action: 'deleteForEveryone', id: targetId });
+      if (syncChannel) {
+        syncChannel.postMessage({ type: 'DELETE_FOR_EVERYONE', id: targetId });
+      }
+    } else {
+      // 2. Delete for Me: hide only for current user
+      const target = sharedMessages.find(m => m.id === targetId);
+      if (target) {
+        if (!target.deletedFor) target.deletedFor = [];
+        if (!target.deletedFor.includes(currentUser)) {
+          target.deletedFor.push(currentUser);
+        }
+        saveLocalSharedMessages();
+        postServerAction({ action: 'deleteForMe', id: targetId, user: currentUser });
+        if (syncChannel) {
+          syncChannel.postMessage({ type: 'DELETE_FOR_ME', id: targetId, user: currentUser });
+        }
+      }
+    }
+
+    renderChatStream();
   }
 
   function openEditModal(msgId) {
     closeMessageActionSheet();
-    const msg = currentContact.messages.find(m => m.id === msgId);
-    if (!msg) return;
+    const msg = sharedMessages.find(m => m.id === msgId);
+    if (!msg || msg.sender !== currentUser) return;
 
     activeActionMsgId = msgId;
     if (editMsgInput) {
@@ -693,46 +652,278 @@ document.addEventListener('DOMContentLoaded', () => {
     editMsgForm.addEventListener('submit', (e) => {
       e.preventDefault();
       const updatedText = editMsgInput.value.trim();
-      const targetMsg = currentContact.messages.find(m => m.id === activeActionMsgId);
-      if (targetMsg) {
+      const targetMsg = sharedMessages.find(m => m.id === activeActionMsgId);
+      if (targetMsg && targetMsg.sender === currentUser) {
         targetMsg.text = updatedText;
         targetMsg.isEdited = true;
-        saveMessages(currentContact.id, currentContact.messages);
-        renderActiveContact(currentContact);
+        saveLocalSharedMessages();
+        postServerAction({ action: 'edit', id: activeActionMsgId, text: updatedText });
+        if (syncChannel) {
+          syncChannel.postMessage({ type: 'EDIT_MESSAGE', id: activeActionMsgId, text: updatedText });
+        }
+        renderChatStream();
       }
       closeEditModal();
     });
   }
 
-  function scrollChatToBottom() {
-    chatThreadContainer.scrollTop = chatThreadContainer.scrollHeight;
-  }
-
-  function escapeHTML(str) {
-    const p = document.createElement('p');
-    p.appendChild(document.createTextNode(str));
-    return p.innerHTML;
-  }
-
-  // 5. Build Switch Contacts Drawer
-  function buildContactsDrawer() {
-    drawerContactsList.innerHTML = '';
-    CONTACTS.forEach((c) => {
-      const item = document.createElement('div');
-      item.className = `drawer-contact-item ${c.id === currentContact.id ? 'active' : ''}`;
-      item.innerHTML = `
-        <img src="${c.avatar}" alt="${c.name}" class="drawer-contact-avatar">
-        <div class="drawer-contact-info">
-          <h4 class="drawer-contact-name">${c.name}</h4>
-          <p class="drawer-contact-sub">${c.role} • ${c.statusText}</p>
-        </div>
-      `;
-      item.addEventListener('click', () => {
-        renderActiveContact(c);
-        contactsDrawerBackdrop.classList.remove('open');
-      });
-      drawerContactsList.appendChild(item);
+  // 12. Clear Chat Handler (Participant-Specific)
+  function clearCurrentChat() {
+    // Hide all existing messages only for current participant
+    sharedMessages.forEach(m => {
+      if (!m.deletedFor) m.deletedFor = [];
+      if (!m.deletedFor.includes(currentUser)) {
+        m.deletedFor.push(currentUser);
+      }
     });
+
+    saveLocalSharedMessages();
+    clearPendingAttachment();
+
+    // Persist participant-specific clear action to server
+    postServerAction({ action: 'clear', user: currentUser });
+
+    // Broadcast clear event to other tabs with the specific user who cleared
+    if (syncChannel) {
+      syncChannel.postMessage({ type: 'CLEAR_CHAT', user: currentUser });
+    }
+
+    renderChatStream();
+    if (chatOptionsDropdown) chatOptionsDropdown.classList.remove('open');
+    if (contactsDrawerBackdrop) contactsDrawerBackdrop.classList.remove('open');
+    if (messageTextInput) messageTextInput.focus();
+  }
+
+  // 13. Auto Mark Unread Messages as Read
+  function markIncomingMessagesAsRead() {
+    let hasUnread = false;
+    sharedMessages.forEach(m => {
+      if (m.sender !== currentUser && m.status !== 'read') {
+        m.status = 'read';
+        hasUnread = true;
+      }
+    });
+
+    if (hasUnread) {
+      saveLocalSharedMessages();
+      postServerAction({ action: 'markRead', reader: currentUser });
+      if (syncChannel) {
+        syncChannel.postMessage({ type: 'MESSAGES_READ', reader: currentUser });
+      }
+    }
+  }
+
+  // 14. Real-time Ticks Status Updater
+  function updateMessageStatus(msgId, newStatus) {
+    const msg = sharedMessages.find(m => m.id === msgId);
+    if (!msg) return;
+
+    // Do not downgrade read status
+    if (msg.status === 'read' && newStatus !== 'read') return;
+
+    msg.status = newStatus;
+    saveLocalSharedMessages();
+
+    const row = messagesStream.querySelector(`.chat-bubble-row[data-msg-id="${msgId}"]`);
+    if (row) {
+      const tickWrap = row.querySelector('.bubble-tick-wrap');
+      if (tickWrap) {
+        tickWrap.innerHTML = getTickSvgHtml(newStatus);
+      }
+    }
+  }
+
+  // 15. Send Message Handler
+  chatMessageForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const text = messageTextInput.value.trim();
+    if (!text && !pendingImageData) return;
+
+    const myTime = getCurrentTimeString();
+    const sentImage = pendingImageData;
+    const myMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+    const initialStatus = 'sent'; // Step 1: Single Grey Tick (✓)
+
+    const newMsg = {
+      id: myMsgId,
+      sender: currentUser,
+      text: text,
+      image: sentImage || null,
+      time: myTime,
+      status: initialStatus,
+      deletedFor: [],
+      isEdited: false,
+      timestamp: Date.now()
+    };
+
+    // Add to shared list and render
+    sharedMessages.push(newMsg);
+    saveLocalSharedMessages();
+    renderChatStream();
+
+    // Clear inputs
+    messageTextInput.value = '';
+    clearPendingAttachment();
+    if (emojiPickerPopover) emojiPickerPopover.classList.remove('open');
+
+    // Broadcast typing stopped
+    if (syncChannel) {
+      syncChannel.postMessage({ type: 'TYPING', sender: currentUser, isTyping: false });
+    }
+
+    // Broadcast new message immediately across open tabs
+    if (syncChannel) {
+      syncChannel.postMessage({ type: 'NEW_MESSAGE', message: newMsg });
+    }
+
+    // Persist to server database
+    postServerAction({ action: 'send', message: newMsg }).then(() => {
+      // Step 2: Delivered (Double Grey Tick ✓✓) once server confirms
+      setTimeout(() => {
+        updateMessageStatus(myMsgId, 'delivered');
+      }, 250);
+    });
+  });
+
+  // 16. Real-Time Typing Notifications
+  let typingTimer = null;
+  if (messageTextInput) {
+    messageTextInput.addEventListener('input', () => {
+      if (syncChannel) {
+        syncChannel.postMessage({ type: 'TYPING', sender: currentUser, isTyping: true });
+        clearTimeout(typingTimer);
+        typingTimer = setTimeout(() => {
+          syncChannel.postMessage({ type: 'TYPING', sender: currentUser, isTyping: false });
+        }, 1200);
+      }
+    });
+  }
+
+  // 17. BroadcastChannel Listener (Zero-latency Cross-Tab Sync)
+  if (syncChannel) {
+    syncChannel.onmessage = (event) => {
+      const data = event.data;
+      if (!data) return;
+
+      if (data.type === 'NEW_MESSAGE') {
+        const incoming = data.message;
+        if (!sharedMessages.some(m => m.id === incoming.id)) {
+          sharedMessages.push(incoming);
+          saveLocalSharedMessages();
+
+          // If incoming from the other participant, mark as read
+          if (incoming.sender !== currentUser) {
+            incoming.status = 'read';
+            saveLocalSharedMessages();
+            postServerAction({ action: 'markRead', reader: currentUser });
+            syncChannel.postMessage({ type: 'MESSAGES_READ', reader: currentUser });
+          }
+          renderChatStream();
+        }
+      } else if (data.type === 'MESSAGES_READ') {
+        let changed = false;
+        sharedMessages.forEach(m => {
+          if (m.sender === currentUser && m.status !== 'read') {
+            m.status = 'read';
+            changed = true;
+          }
+        });
+        if (changed) {
+          saveLocalSharedMessages();
+          renderChatStream();
+        }
+      } else if (data.type === 'EDIT_MESSAGE') {
+        const target = sharedMessages.find(m => m.id === data.id);
+        if (target) {
+          target.text = data.text;
+          target.isEdited = true;
+          saveLocalSharedMessages();
+          renderChatStream();
+        }
+      } else if (data.type === 'DELETE_FOR_EVERYONE') {
+        sharedMessages = sharedMessages.filter(m => m.id !== data.id);
+        saveLocalSharedMessages();
+        renderChatStream();
+      } else if (data.type === 'DELETE_FOR_ME') {
+        const target = sharedMessages.find(m => m.id === data.id);
+        if (target) {
+          if (!target.deletedFor) target.deletedFor = [];
+          if (!target.deletedFor.includes(data.user)) {
+            target.deletedFor.push(data.user);
+          }
+          saveLocalSharedMessages();
+          renderChatStream();
+        }
+      } else if (data.type === 'CLEAR_CHAT') {
+        const clearedUser = data.user;
+        if (clearedUser) {
+          sharedMessages.forEach(m => {
+            if (!m.deletedFor) m.deletedFor = [];
+            if (!m.deletedFor.includes(clearedUser)) {
+              m.deletedFor.push(clearedUser);
+            }
+          });
+          saveLocalSharedMessages();
+          renderChatStream();
+        }
+      } else if (data.type === 'TYPING') {
+        if (data.sender === otherUser) {
+          if (data.isTyping) {
+            if (typingStatusBar && typingStatusLabel) {
+              typingStatusLabel.textContent = `${getParticipantName(otherUser)} is typing...`;
+              typingStatusBar.style.display = 'flex';
+            }
+          } else {
+            if (typingStatusBar) typingStatusBar.style.display = 'none';
+          }
+        }
+      }
+    };
+  }
+
+  // 18. Periodic Server Polling Sync (1.5 seconds)
+  setInterval(async () => {
+    const serverMsgs = await fetchServerMessages();
+    if (JSON.stringify(serverMsgs) !== JSON.stringify(sharedMessages)) {
+      sharedMessages = serverMsgs;
+      saveLocalSharedMessages();
+      markIncomingMessagesAsRead();
+      renderChatStream();
+    }
+  }, 1500);
+
+  // 19. Contacts Drawer (Participant info & switcher)
+  function buildContactsDrawer() {
+    if (!drawerContactsList) return;
+    drawerContactsList.innerHTML = '';
+
+    const otherItem = document.createElement('div');
+    otherItem.className = 'drawer-contact-item active';
+    otherItem.innerHTML = `
+      <img src="${getParticipantAvatar(otherUser)}" alt="${getParticipantName(otherUser)}" class="drawer-contact-avatar">
+      <div class="drawer-contact-info">
+        <h4 class="drawer-contact-name">${getParticipantName(otherUser)}</h4>
+        <p class="drawer-contact-sub">Connected • Online</p>
+      </div>
+    `;
+    otherItem.addEventListener('click', () => {
+      contactsDrawerBackdrop.classList.remove('open');
+    });
+    drawerContactsList.appendChild(otherItem);
+
+    // Identity badge showing current user
+    const selfItem = document.createElement('div');
+    selfItem.className = 'drawer-contact-item';
+    selfItem.style.opacity = '0.75';
+    selfItem.style.cursor = 'default';
+    selfItem.innerHTML = `
+      <img src="${getParticipantAvatar(currentUser)}" alt="You (${getParticipantName(currentUser)})" class="drawer-contact-avatar">
+      <div class="drawer-contact-info">
+        <h4 class="drawer-contact-name">You (${getParticipantName(currentUser)})</h4>
+        <p class="drawer-contact-sub">Current Sender Identity</p>
+      </div>
+    `;
+    drawerContactsList.appendChild(selfItem);
   }
 
   if (contactsToggleBtn) {
@@ -756,7 +947,22 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 6. Options Menu (Clear Chat, Switch Friends, etc.)
+  if (activeContactBtn) {
+    activeContactBtn.addEventListener('click', () => {
+      buildContactsDrawer();
+      contactsDrawerBackdrop.classList.add('open');
+    });
+  }
+
+  if (switchBuddyOptionBtn) {
+    switchBuddyOptionBtn.addEventListener('click', () => {
+      if (chatOptionsDropdown) chatOptionsDropdown.classList.remove('open');
+      buildContactsDrawer();
+      contactsDrawerBackdrop.classList.add('open');
+    });
+  }
+
+  // 20. Options Menu Dropdown
   if (chatMenuBtn && chatOptionsDropdown) {
     chatMenuBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -771,33 +977,14 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   if (clearChatBtn) {
-    clearChatBtn.addEventListener('click', () => {
-      clearCurrentChat();
-    });
+    clearChatBtn.addEventListener('click', clearCurrentChat);
   }
 
   if (drawerClearChatBtn) {
-    drawerClearChatBtn.addEventListener('click', () => {
-      clearCurrentChat();
-    });
+    drawerClearChatBtn.addEventListener('click', clearCurrentChat);
   }
 
-  if (switchBuddyOptionBtn) {
-    switchBuddyOptionBtn.addEventListener('click', () => {
-      if (chatOptionsDropdown) chatOptionsDropdown.classList.remove('open');
-      buildContactsDrawer();
-      contactsDrawerBackdrop.classList.add('open');
-    });
-  }
-
-  if (activeContactBtn) {
-    activeContactBtn.addEventListener('click', () => {
-      buildContactsDrawer();
-      contactsDrawerBackdrop.classList.add('open');
-    });
-  }
-
-  // 7. Image Compression & Attachment Helpers
+  // 21. Image Compression & Attachment Helpers
   function compressImageFile(file, maxWidth = 800, maxHeight = 800, quality = 0.8) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -905,7 +1092,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 8. Emoji Picker Functions
+  // 22. Emoji Picker Functions
   function renderEmojis(categoryOrList) {
     if (!emojiGridContainer) return;
     emojiGridContainer.innerHTML = '';
@@ -979,128 +1166,21 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 9. Dynamic Simulated Contact Response
-  function getContactReply(userMessage, hasImage) {
-    if (hasImage) {
-      const imageReplies = [
-        'Arrey wah! Yeh photo bohot badhiya hai! 🦅 Kya aap iske baare me kuch aur discuss karna chahte hain?',
-        'Maine yeh image achhe se dekh li hai! 🦅 Bahut informative lag rahi hai. Shaabash!',
-        'Nice picture! 🦅 Agar is topic ya photo se related koi doubt ho, toh bejhijhak poochiye!'
-      ];
-      return imageReplies[Math.floor(Math.random() * imageReplies.length)];
-    }
+  // 23. Initial Application Initialization
+  setupChatHeader();
+  sharedMessages = await fetchServerMessages();
+  saveLocalSharedMessages();
+  markIncomingMessagesAsRead();
+  renderChatStream();
 
-    const q = (userMessage || '').toLowerCase();
-
-    if (q.includes('notes') || q.includes('physics') || q.includes('padhai') || q.includes('exam')) {
-      return 'Haan bilkul! Maine formulas and derivations ka summary note bana rakha hai. 🦅 Main abhi share karta hoon!';
-    } else if (q.includes('chandrayaan') || q.includes('isro') || q.includes('space') || q.includes('moon')) {
-      return 'Sahi me! South pole par lander landing wala moment sach me historic tha. ISRO scientists are truly inspiring! 🚀✨';
-    } else if (q.includes('constitution') || q.includes('samvidhan') || q.includes('democracy')) {
-      return 'Bilkul! Preamble, Fundamental Rights aur Article 21A hamare civic syllabus ka sabse important part hai. 📜🇮🇳';
-    } else if (q.includes('assignment') || q.includes('submit') || q.includes('project')) {
-      return 'Assignment complete ho gaya kya? Agar koi doubt ho toh mujhse pooch lo, saath milkar solve karenge! 🦅';
-    } else if (q.includes('library') || q.includes('sham') || q.includes('milte')) {
-      return 'Pakka! Library me milkar revision karenge aur Paatshala ki nayi stories padhenge. 📖';
-    } else if (q.includes('hello') || q.includes('hi') || q.includes('hey') || q.includes('kya hal')) {
-      return `Hey! Main bilkul theek hoon! 🦅 Aaj Paatshala me kya naya padha tune?`;
-    } else {
-      const genericReplies = [
-        `Got it! Main aapki help ke liye hamesha ready hoon. 🦅 Aur batao?`,
-        `Bilkul sahi kaha! Let's explore this topic together in our study session. ✨`,
-        `Nice question! Maine isko apni notes list me add kar liya hai. 💡`,
-        `Haan exactly! Hum dono milkar isko achhe se revise kar lenge. 🦅`
-      ];
-      return genericReplies[Math.floor(Math.random() * genericReplies.length)];
-    }
+  if (messageTextInput) {
+    messageTextInput.focus();
   }
 
-  // 10. Send Message Handler
-  chatMessageForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const text = messageTextInput.value.trim();
-    if (!text && !pendingImageData) return;
-
-    // Reset empty chat state if present
-    if (emptyChatState) emptyChatState.style.display = 'none';
-    if (chatDatePill) chatDatePill.style.display = 'flex';
-
-    const myTime = getCurrentTimeString();
-    const sentImage = pendingImageData;
-
-    // 1. Initial Status: 'sent' (Single Grey Tick ✓)
-    const myMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-    const initialStatus = 'sent';
-
-    appendBubbleToUI(text, true, myTime, sentImage, myMsgId, false, initialStatus);
-    currentContact.messages.push({
-      id: myMsgId,
-      sender: 'me',
-      text: text,
-      image: sentImage || null,
-      time: myTime,
-      isEdited: false,
-      status: initialStatus
-    });
-    saveMessages(currentContact.id, currentContact.messages);
-
-    // 2. Clear Input & Attachment
-    messageTextInput.value = '';
-    clearPendingAttachment();
-    if (emojiPickerPopover) emojiPickerPopover.classList.remove('open');
-
-    // 3. Real-Time Delivery & Read Receipts Flow
-    if (currentContact.online) {
-      // Step 1: Delivered (Double Grey Tick ✓✓) after 500ms
-      setTimeout(() => {
-        updateMessageStatus(myMsgId, 'delivered');
-      }, 500);
-
-      // Step 2: Read / Seen (Double Blue Tick ✓✓) after 1200ms
-      setTimeout(() => {
-        updateMessageStatus(myMsgId, 'read');
-      }, 1200);
-
-      // Step 3: Receiver starts typing after reading
-      setTimeout(() => {
-        if (typingStatusLabel && typingStatusBar) {
-          typingStatusLabel.textContent = `${currentContact.name} is typing...`;
-          typingStatusBar.style.display = 'flex';
-        }
-      }, 1500);
-
-      // Step 4: Contact's reply arrives after reading and typing
-      setTimeout(() => {
-        if (typingStatusBar) typingStatusBar.style.display = 'none';
-        const reply = getContactReply(text, !!sentImage);
-        const replyTime = getCurrentTimeString();
-        const replyMsgId = 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-        appendBubbleToUI(reply, false, replyTime, null, replyMsgId, false);
-        currentContact.messages.push({
-          id: replyMsgId,
-          sender: 'them',
-          text: reply,
-          time: replyTime,
-          isEdited: false
-        });
-        saveMessages(currentContact.id, currentContact.messages);
-      }, 2600 + Math.random() * 400);
-    } else {
-      // Receiver is offline (e.g. Dr. Verma):
-      // Message remains as 'sent' (Single Grey Tick ✓) and stored permanently as 'sent'.
-      // No delivered or read receipt until recipient comes online!
-    }
-  });
-
-  // Initial Load
-  renderActiveContact(currentContact);
-  messageTextInput.focus();
-
   // Re-sync on page navigation / bfcache restore
-  window.addEventListener('pageshow', () => {
-    if (currentContact) {
-      currentContact.messages = loadMessages(currentContact.id, currentContact.initialMessages);
-      renderActiveContact(currentContact);
-    }
+  window.addEventListener('pageshow', async () => {
+    sharedMessages = await fetchServerMessages();
+    markIncomingMessagesAsRead();
+    renderChatStream();
   });
 });

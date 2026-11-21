@@ -1,0 +1,68 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background Gradient -->
+    <linearGradient id="ct-bg" x1="0" y1="0" x2="120" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF2FF"/>
+      <stop offset="100%" stop-color="#E0E7FF"/>
+    </linearGradient>
+
+    <!-- Hair Gradient -->
+    <linearGradient id="ct-hair" x1="30" y1="20" x2="90" y2="60" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#312E81"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+
+    <!-- Shirt Gradient -->
+    <linearGradient id="ct-shirt" x1="20" y1="80" x2="100" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4F46E5"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+
+    <!-- Care Heart Gradient -->
+    <linearGradient id="ct-heart" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#EC4899"/>
+      <stop offset="100%" stop-color="#EF4444"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Circular Outer Frame -->
+  <circle cx="60" cy="60" r="58" fill="url(#ct-bg)" stroke="#818CF8" stroke-width="2.5"/>
+
+  <!-- Caretaker Shoulders & Uniform -->
+  <path d="M22 110 C24 90 36 78 50 76 L70 76 C84 78 96 90 98 110 Z" fill="url(#ct-shirt)"/>
+  
+  <!-- Collar & Neck -->
+  <rect x="52" y="58" width="16" height="22" rx="4" fill="#FDE68A"/>
+  <path d="M48 76 L60 88 L72 76 Z" fill="#FFFFFF"/>
+
+  <!-- Caretaker Head & Face -->
+  <ellipse cx="60" cy="52" rx="25" ry="26" fill="#FDE68A"/>
+
+  <!-- Caretaker Hair -->
+  <path d="M35 48 C34 28 44 18 60 18 C76 18 86 28 85 48 C80 38 74 34 66 34 C54 34 47 40 35 48 Z" fill="url(#ct-hair)"/>
+  <path d="M35 48 C37 54 39 58 41 60 C39 54 37 50 35 48 Z" fill="url(#ct-hair)"/>
+  <path d="M85 48 C83 54 81 58 79 60 C81 54 83 50 85 48 Z" fill="url(#ct-hair)"/>
+
+  <!-- Friendly Eyes -->
+  <circle cx="50" cy="50" r="3.2" fill="#1E1B4B"/>
+  <circle cx="70" cy="50" r="3.2" fill="#1E1B4B"/>
+  <circle cx="51" cy="49" r="1.2" fill="#FFFFFF"/>
+  <circle cx="71" cy="49" r="1.2" fill="#FFFFFF"/>
+
+  <!-- Eyebrows -->
+  <path d="M45 44 Q50 41 55 44" stroke="#312E81" stroke-width="2" stroke-linecap="round" fill="none"/>
+  <path d="M65 44 Q70 41 75 44" stroke="#312E81" stroke-width="2" stroke-linecap="round" fill="none"/>
+
+  <!-- Warm Gentle Smile -->
+  <path d="M53 59 Q60 65 67 59" stroke="#B45309" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+
+  <!-- Rosy Blush Cheeks -->
+  <circle cx="43" cy="55" r="4.5" fill="#F472B6" opacity="0.6"/>
+  <circle cx="77" cy="55" r="4.5" fill="#F472B6" opacity="0.6"/>
+
+  <!-- Care Badge / Heart Pin on Uniform -->
+  <g transform="translate(60, 98)">
+    <circle cx="0" cy="0" r="12" fill="#FFFFFF" stroke="#C7D2FE" stroke-width="1.5"/>
+    <path d="M0 4 C-5 0 -8 -4 -8 -7 C-8 -9.5 -6 -11 -3.5 -11 C-1.8 -11 -0.6 -10 0 -8.8 C0.6 -10 1.8 -11 3.5 -11 C6 -11 8 -9.5 8 -7 C8 -4 5 0 0 4 Z" fill="url(#ct-heart)" transform="translate(0, 4) scale(0.65)"/>
+  </g>
+</svg>

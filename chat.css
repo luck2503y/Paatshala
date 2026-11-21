@@ -231,7 +231,8 @@ html, body {
   border-radius: var(--radius-full);
 }
 
-.active-status-text {
+.active-status-text,
+.active-contact-status {
   font-size: 0.725rem;
   color: var(--online-color);
   font-weight: 600;
@@ -498,12 +499,18 @@ html, body {
 }
 
 .chat-bubble-avatar {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
   object-fit: cover;
   flex-shrink: 0;
   margin-bottom: 2px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="dark"] .chat-bubble-avatar {
+  border-color: rgba(255, 255, 255, 0.15);
 }
 
 .chat-bubble {
@@ -513,6 +520,18 @@ html, body {
   line-height: 1.45;
   word-break: break-word;
   position: relative;
+}
+
+.bubble-sender-name {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 3px;
+  letter-spacing: 0.2px;
+}
+[data-theme="dark"] .bubble-sender-name {
+  color: #818cf8;
 }
 
 /* Incoming Bubble (Friend) */

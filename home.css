@@ -1157,6 +1157,15 @@ html, body {
   margin-bottom: 2rem;
   border-bottom: 2px solid var(--border-subtle);
   padding-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+}
+
+.chapter-heading-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .chapter-badge-num {
@@ -1174,6 +1183,60 @@ html, body {
   font-weight: 800;
   color: var(--text-main);
   letter-spacing: -0.02em;
+}
+
+/* Floating "A" Icon inside Chapter Name Section */
+.chapter-a-btn {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%));
+  color: #ffffff;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 25px -4px var(--primary-glow, rgba(79, 70, 229, 0.5)), 0 4px 10px rgba(0, 0, 0, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  user-select: none;
+  flex-shrink: 0;
+  position: relative;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+.a-btn-ping {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 12px;
+  height: 12px;
+  background-color: #10b981;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+}
+
+.chapter-a-btn:hover {
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.65), 0 6px 14px rgba(0, 0, 0, 0.25);
+}
+
+.chapter-a-btn:active {
+  transform: translateY(1px) scale(0.95);
+  box-shadow: 0 4px 12px -2px var(--primary-glow, rgba(79, 70, 229, 0.4));
+}
+
+.chapter-a-btn:focus-visible {
+  outline: 3px solid var(--primary, #6366f1);
+  outline-offset: 3px;
+}
+
+.a-letter {
+  font-family: var(--font-family, var(--font-ui, sans-serif));
+  font-size: 1.45rem;
+  font-weight: 800;
+  line-height: 1;
+  color: #ffffff;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
 /* Prose Typography */
