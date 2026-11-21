@@ -1,0 +1,42 @@
+<svg viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Circular Base Badge -->
+  <circle cx="60" cy="60" r="58" fill="#F1F5F9" stroke="#E2E8F0" stroke-width="2"/>
+  
+  <!-- Panda Ears -->
+  <circle cx="30" cy="30" r="17" fill="#1E293B"/>
+  <circle cx="30" cy="30" r="8" fill="#475569"/>
+  <circle cx="90" cy="30" r="17" fill="#1E293B"/>
+  <circle cx="90" cy="30" r="8" fill="#475569"/>
+  
+  <!-- Panda Face Base -->
+  <ellipse cx="60" cy="68" rx="42" ry="38" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="2.5"/>
+  
+  <!-- Eye Patches -->
+  <ellipse cx="43" cy="64" rx="13" ry="15" fill="#1E293B" transform="rotate(-15 43 64)"/>
+  <ellipse cx="77" cy="64" rx="13" ry="15" fill="#1E293B" transform="rotate(15 77 64)"/>
+  
+  <!-- Eyes -->
+  <circle cx="44" cy="63" r="5.5" fill="#FFFFFF"/>
+  <circle cx="76" cy="63" r="5.5" fill="#FFFFFF"/>
+  
+  <circle cx="45" cy="63" r="3.5" fill="#0F172A"/>
+  <circle cx="77" cy="63" r="3.5" fill="#0F172A"/>
+  
+  <!-- Eye Sparkles -->
+  <circle cx="46" cy="61.5" r="1.5" fill="#FFFFFF"/>
+  <circle cx="78" cy="61.5" r="1.5" fill="#FFFFFF"/>
+  
+  <!-- Pink Blush Cheeks -->
+  <ellipse cx="30" cy="78" rx="7" ry="4.5" fill="#F472B6" opacity="0.65"/>
+  <ellipse cx="90" cy="78" rx="7" ry="4.5" fill="#F472B6" opacity="0.65"/>
+  
+  <!-- Nose -->
+  <ellipse cx="60" cy="76" rx="6.5" ry="4.5" fill="#1E293B"/>
+  <ellipse cx="60" cy="74.5" rx="2" ry="1" fill="#FFFFFF" opacity="0.6"/>
+  
+  <!-- Cute Smile Mouth -->
+  <path d="M54 82 Q60 88 66 82" stroke="#1E293B" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+  
+  <!-- Tiny Bamboo Leaf Decoration on Head -->
+  <path d="M60 22 C64 16 72 17 74 21 C70 24 64 24 60 22 Z" fill="#10B981"/>
+</svg>

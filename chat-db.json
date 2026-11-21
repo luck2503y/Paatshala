@@ -91,7 +91,8 @@
     "time": "5:22 PM",
     "status": "read",
     "deletedFor": [
-      "D"
+      "D",
+      "A"
     ],
     "isEdited": false,
     "timestamp": 1795261921867
@@ -102,9 +103,10 @@
     "text": "ha bhai kesa hai",
     "image": null,
     "time": "5:22 PM",
-    "status": "sent",
+    "status": "read",
     "deletedFor": [
-      "D"
+      "D",
+      "A"
     ],
     "isEdited": false,
     "timestamp": 1795261955931
