@@ -16,6 +16,49 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Storage Keys & Constants
   const SHARED_STORAGE_KEY = 'paatshala_shared_chat_messages';
   const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_chat_sync') : null;
+  const presenceChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_presence_sync') : null;
+
+  // Real-time Independent Presence Controller (A and D)
+  function sendPresence(status) {
+    try {
+      localStorage.setItem('paatshala_presence_' + currentUser, status);
+      if (presenceChannel) {
+        presenceChannel.postMessage({ user: currentUser, status });
+      }
+      const payload = JSON.stringify({ user: currentUser, status });
+      if (status === 'offline' && navigator.sendBeacon) {
+        navigator.sendBeacon('/api/presence', new Blob([payload], { type: 'application/json' }));
+      } else {
+        fetch('/api/presence', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: payload,
+          keepalive: status === 'offline'
+        }).catch(() => {});
+      }
+    } catch (e) {}
+  }
+
+  function updateHeaderPresence(isOtherOnline) {
+    if (activeOnlineDot) {
+      activeOnlineDot.className = `active-online-dot ${isOtherOnline ? '' : 'offline'}`;
+    }
+    if (activeStatusText) {
+      activeStatusText.textContent = isOtherOnline ? 'Online' : 'Offline';
+      activeStatusText.className = `active-contact-status ${isOtherOnline ? '' : 'offline'}`;
+      activeStatusText.style.display = 'block';
+    }
+  }
+
+  async function checkOtherUserPresence() {
+    try {
+      const res = await fetch('/api/presence?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const presence = await res.json();
+        updateHeaderPresence(!!presence[otherUser]);
+      }
+    } catch (e) {}
+  }
 
   // State
   let sharedMessages = [];
@@ -177,6 +220,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }));
       }
 
+      // Notify presence offline immediately when exiting chat
+      sendPresence('offline');
+
       // Clear chat authentication ticket & source book record
       sessionStorage.removeItem('paatshala_chat_authorized_ticket');
       sessionStorage.removeItem('paatshala_chat_authenticated');
@@ -191,10 +237,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
-  // Clear auth ticket on pagehide/unload so back/forward cannot re-enter chat without password
+  // Clear auth ticket and mark offline on pagehide/unload
   window.addEventListener('pagehide', () => {
+    sendPresence('offline');
     sessionStorage.removeItem('paatshala_chat_authorized_ticket');
     sessionStorage.removeItem('paatshala_chat_authenticated');
+  });
+
+  window.addEventListener('beforeunload', () => {
+    sendPresence('offline');
   });
 
   // 5. Time and Tick Formatting Helpers
@@ -309,13 +360,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (activeContactName) {
       activeContactName.textContent = nameDisplay;
     }
-    if (activeStatusText) {
-      activeStatusText.textContent = 'Online';
-      activeStatusText.style.display = 'block';
-    }
-    if (activeOnlineDot) {
-      activeOnlineDot.className = 'active-online-dot';
-    }
+    checkOtherUserPresence();
     if (messageTextInput) {
       messageTextInput.placeholder = `Message ${nameDisplay}...`;
     }
@@ -1173,12 +1218,33 @@ document.addEventListener('DOMContentLoaded', async () => {
   markIncomingMessagesAsRead();
   renderChatStream();
 
+  // Establish online presence for current participant
+  sendPresence('online');
+  checkOtherUserPresence();
+
+  // Periodic heartbeat and presence check (every 2s)
+  setInterval(() => {
+    sendPresence('online');
+    checkOtherUserPresence();
+  }, 2000);
+
+  // Real-time presence listener via BroadcastChannel
+  if (presenceChannel) {
+    presenceChannel.onmessage = (e) => {
+      if (e.data && e.data.user === otherUser) {
+        updateHeaderPresence(e.data.status === 'online');
+      }
+    };
+  }
+
   if (messageTextInput) {
     messageTextInput.focus();
   }
 
   // Re-sync on page navigation / bfcache restore
   window.addEventListener('pageshow', async () => {
+    sendPresence('online');
+    checkOtherUserPresence();
     sharedMessages = await fetchServerMessages();
     markIncomingMessagesAsRead();
     renderChatStream();

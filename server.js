@@ -47,6 +47,20 @@ function writeDb(data) {
   }
 }
 
+// Active Presence Tracking for Participants (A and D)
+const presenceState = {
+  A: 0,
+  D: 0
+};
+
+function getPresence() {
+  const now = Date.now();
+  return {
+    A: (now - presenceState.A) < 4500,
+    D: (now - presenceState.D) < 4500
+  };
+}
+
 function requestHandler(req, res) {
   // CORS & Security Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -60,6 +74,51 @@ function requestHandler(req, res) {
   }
 
   let reqUrl = req.url.split('?')[0];
+
+  // REST API Endpoint for Real-time Presence Tracking
+  if (reqUrl === '/api/presence') {
+    if (req.method === 'GET') {
+      res.writeHead(200, {
+        'Content-Type': 'application/json; charset=utf-8',
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      });
+      res.end(JSON.stringify(getPresence()));
+      return;
+    }
+
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => {
+        body += chunk;
+        if (body.length > 1024 * 1024) req.destroy();
+      });
+      req.on('end', () => {
+        try {
+          const payload = JSON.parse(body || '{}');
+          const user = payload.user;
+          const status = payload.status;
+          if (user === 'A' || user === 'D') {
+            if (status === 'online') {
+              presenceState[user] = Date.now();
+            } else if (status === 'offline') {
+              presenceState[user] = 0;
+            }
+          }
+          res.writeHead(200, {
+            'Content-Type': 'application/json; charset=utf-8',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          });
+          res.end(JSON.stringify({ success: true, presence: getPresence() }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: e.message }));
+        }
+      });
+      return;
+    }
+  }
 
   // REST API Endpoints for Shared Chat Synchronization
   if (reqUrl === '/api/messages') {

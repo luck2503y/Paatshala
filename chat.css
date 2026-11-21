@@ -238,6 +238,11 @@ html, body {
   font-weight: 600;
 }
 
+.active-status-text.offline,
+.active-contact-status.offline {
+  color: var(--text-muted);
+}
+
 .header-right {
   display: flex;
   align-items: center;

@@ -408,8 +408,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
       // Reload current chapter without jumping scroll
       loadChapter(currentChapterIndex, false);
-
-      showToast(lang === 'hinglish' ? 'Language: Hinglish' : 'Language: English');
     }
   }
 
@@ -510,8 +508,6 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.pathname + '#book=' + encodeURIComponent(book.id) + '&ch=' + initialChapter
       );
     }
-
-    showToast(`Reading: ${book.title}`);
   }
 
   function renderChapterTabs() {

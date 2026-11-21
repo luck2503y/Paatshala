@@ -141,9 +141,6 @@
           sessionStorage.setItem('paatshala_chat_source_book', JSON.stringify(state));
         }
       }
-      if (dBtnPing) dBtnPing.style.display = 'none';
-      const aBtnPing = document.getElementById('aBtnPing');
-      if (aBtnPing) aBtnPing.style.display = 'none';
 
       dPwdModalBackdrop.classList.add('open');
       dPwdErrorMsg.classList.remove('visible');
@@ -312,5 +309,61 @@
       }
     });
 
+    // 5. Real-Time Online Status Sync for A & D Icons on Book Reading Page
+    const presenceChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_presence_sync') : null;
+
+    function applyPresence(presence) {
+      if (!presence) return;
+      const dPing = document.getElementById('dBtnPing');
+      if (dPing) {
+        dPing.style.display = presence.D ? 'block' : 'none';
+      }
+      const aPing = document.getElementById('aBtnPing');
+      if (aPing) {
+        aPing.style.display = presence.A ? 'block' : 'none';
+      }
+    }
+
+    async function checkServerPresence() {
+      try {
+        const res = await fetch('/api/presence?t=' + Date.now(), { cache: 'no-store' });
+        if (res.ok) {
+          const presence = await res.json();
+          applyPresence(presence);
+        }
+      } catch (e) {}
+    }
+
+    // Initial check & periodic polling
+    checkServerPresence();
+    setInterval(checkServerPresence, 2000);
+
+    // BroadcastChannel cross-tab instant sync
+    if (presenceChannel) {
+      presenceChannel.onmessage = (event) => {
+        const data = event.data;
+        if (!data || !data.user) return;
+        const isOnline = data.status === 'online';
+        if (data.user === 'D') {
+          const dPing = document.getElementById('dBtnPing');
+          if (dPing) dPing.style.display = isOnline ? 'block' : 'none';
+        }
+        if (data.user === 'A') {
+          const aPing = document.getElementById('aBtnPing');
+          if (aPing) aPing.style.display = isOnline ? 'block' : 'none';
+        }
+      };
+    }
+
+    // LocalStorage fallback sync
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'paatshala_presence_A' || e.key === 'paatshala_presence_D') {
+        const aOnline = localStorage.getItem('paatshala_presence_A') === 'online';
+        const dOnline = localStorage.getItem('paatshala_presence_D') === 'online';
+        applyPresence({ A: aOnline, D: dOnline });
+      }
+    });
+
+    window.addEventListener('pageshow', checkServerPresence);
   }
 })();
