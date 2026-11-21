@@ -83,6 +83,14 @@
     </div>
   `;
 
+  // Global visibility controller for floating D chat button
+  window.setDChatVisibility = function (visible) {
+    const widget = document.getElementById('dChatWidget');
+    if (widget) {
+      widget.classList.toggle('visible', !!visible);
+    }
+  };
+
   document.addEventListener('DOMContentLoaded', initPasswordChatWidget);
 
   function initPasswordChatWidget() {
@@ -99,6 +107,11 @@
     // Inject modal & widget markup
     document.body.insertAdjacentHTML('beforeend', WIDGET_AND_MODAL_HTML);
 
+    // Initial visibility: only visible if book reader is currently open
+    const readerView = document.getElementById('readerView');
+    const isReaderOpen = readerView && readerView.style.display === 'flex';
+    window.setDChatVisibility(isReaderOpen);
+
     // Elements
     const floatingDBtn = document.getElementById('floatingDBtn');
     const dPwdModalBackdrop = document.getElementById('dPwdModalBackdrop');
@@ -113,6 +126,13 @@
 
     // 1. Open Password Modal when clicking "D"
     function openPasswordModal() {
+      // Capture source book reading state before opening password modal
+      if (window.getCurrentReadingState) {
+        const state = window.getCurrentReadingState();
+        if (state && state.bookId) {
+          sessionStorage.setItem('paatshala_chat_source_book', JSON.stringify(state));
+        }
+      }
       if (dBtnPing) dBtnPing.style.display = 'none';
       dPwdModalBackdrop.classList.add('open');
       dPwdErrorMsg.classList.remove('visible');
@@ -175,8 +195,8 @@
       e.preventDefault();
       const enteredPassword = dPwdInput.value.trim().toLowerCase();
 
-      // Accepted passwords (default: paatshala, or standard demo passwords)
-      const validPasswords = ['paatshala', '1234', 'admin', 'lucky', 'pass'];
+      // Accepted passwords (including 2011, paatshala, and standard demo passwords)
+      const validPasswords = ['2011', 'paatshala', '1234', 'admin', 'lucky', 'pass'];
 
       if (!enteredPassword) {
         dPwdInputWrap.classList.add('error');
@@ -197,12 +217,34 @@
         dPwdSubmitBtn.style.background = 'linear-gradient(135deg, #10b981 0%, #059669 100%)';
         dPwdSubmitBtn.disabled = true;
 
+        // Ensure source reading state is up to date
+        if (window.getCurrentReadingState) {
+          const state = window.getCurrentReadingState();
+          if (state && state.bookId) {
+            sessionStorage.setItem('paatshala_chat_source_book', JSON.stringify(state));
+          }
+        }
+
+        // Generate one-time secure authorization ticket
+        const accessTicket = 'auth_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        sessionStorage.setItem('paatshala_chat_authorized_ticket', accessTicket);
         sessionStorage.setItem('paatshala_chat_authenticated', 'true');
 
+        let queryParams = 'auth=' + accessTicket;
+        try {
+          const storedSource = sessionStorage.getItem('paatshala_chat_source_book');
+          if (storedSource) {
+            const parsed = JSON.parse(storedSource);
+            if (parsed && parsed.bookId) {
+              queryParams += `&fromBook=${encodeURIComponent(parsed.bookId)}&ch=${parsed.chapterIndex || 0}&scroll=${parsed.scrollY || 0}`;
+            }
+          }
+        } catch (e) {}
+
         setTimeout(() => {
-          // Open new dedicated chat page within the same website (same tab)
-          window.location.href = 'chat.html';
-        }, 450);
+          // Open dedicated chat page strictly passing the authorized ticket and source book params
+          window.location.href = 'chat.html?' + queryParams;
+        }, 400);
 
       } else {
         // Incorrect Password

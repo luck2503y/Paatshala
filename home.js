@@ -13,6 +13,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const noBooksState = document.getElementById('noBooksState');
   const booksCountBadge = document.getElementById('booksCountBadge');
   const categoryChips = document.querySelectorAll('.chip-btn');
+  const chipsScrollViewport = document.getElementById('chipsScrollViewport');
+  const chipsPrevBtn = document.getElementById('chipsPrevBtn');
+  const chipsNextBtn = document.getElementById('chipsNextBtn');
   const themeToggleBtn = document.getElementById('themeToggleBtn');
   const avatarMenuBtn = document.getElementById('avatarMenuBtn');
   const userPopover = document.getElementById('userPopover');
@@ -44,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
   const fontDecBtn = document.getElementById('fontDecBtn');
   const fontIncBtn = document.getElementById('fontIncBtn');
   const readingProgressFill = document.getElementById('readingProgressFill');
+  const langBtnEn = document.getElementById('langBtnEn');
+  const langBtnHinglish = document.getElementById('langBtnHinglish');
 
   // State
   let currentBook = null;
@@ -52,6 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
   let searchQuery = '';
   let bookmarkedBookIds = JSON.parse(localStorage.getItem('paatshala-book-bookmarks') || '[]');
   let currentProseSizeRem = 1.0625;
+  let currentLanguage = localStorage.getItem('paatshala-reading-lang') || 'en';
 
   // 1. Theme Management (Sync with Login page)
   function applyTheme(theme) {
@@ -250,65 +256,283 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // 7. Category Filter Chips
-  categoryChips.forEach((chip) => {
-    chip.addEventListener('click', () => {
-      categoryChips.forEach(c => c.classList.remove('active'));
-      chip.classList.add('active');
-      activeCategory = chip.getAttribute('data-category') || 'all';
-      renderBooksGrid();
+  // 7. Category Filter Chips & Smooth Sliding Controls
+  function updateChipsNavButtons() {
+    if (!chipsScrollViewport || !chipsPrevBtn || !chipsNextBtn) return;
+    const scrollLeft = chipsScrollViewport.scrollLeft;
+    const maxScroll = chipsScrollViewport.scrollWidth - chipsScrollViewport.clientWidth;
+
+    // Show/hide left button
+    chipsPrevBtn.style.display = scrollLeft > 10 ? 'flex' : 'none';
+    // Show/hide right button
+    chipsNextBtn.style.display = scrollLeft < maxScroll - 10 ? 'flex' : 'none';
+  }
+
+  if (chipsScrollViewport) {
+    // Arrow button click handlers
+    if (chipsNextBtn) {
+      chipsNextBtn.addEventListener('click', () => {
+        chipsScrollViewport.scrollBy({ left: 240, behavior: 'smooth' });
+      });
+    }
+
+    if (chipsPrevBtn) {
+      chipsPrevBtn.addEventListener('click', () => {
+        chipsScrollViewport.scrollBy({ left: -240, behavior: 'smooth' });
+      });
+    }
+
+    chipsScrollViewport.addEventListener('scroll', updateChipsNavButtons);
+    window.addEventListener('resize', updateChipsNavButtons);
+    // Initial check
+    setTimeout(updateChipsNavButtons, 200);
+
+    // Mouse wheel horizontal scrolling
+    chipsScrollViewport.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        chipsScrollViewport.scrollLeft += e.deltaY * 1.5;
+        updateChipsNavButtons();
+      }
+    }, { passive: false });
+
+    // Mouse drag-to-slide
+    let isDown = false;
+    let startX = 0;
+    let scrollStart = 0;
+    let hasDragged = false;
+
+    chipsScrollViewport.addEventListener('mousedown', (e) => {
+      isDown = true;
+      hasDragged = false;
+      chipsScrollViewport.classList.add('is-dragging');
+      startX = e.pageX - chipsScrollViewport.offsetLeft;
+      scrollStart = chipsScrollViewport.scrollLeft;
     });
-  });
+
+    chipsScrollViewport.addEventListener('mouseleave', () => {
+      isDown = false;
+      chipsScrollViewport.classList.remove('is-dragging');
+    });
+
+    chipsScrollViewport.addEventListener('mouseup', () => {
+      isDown = false;
+      chipsScrollViewport.classList.remove('is-dragging');
+    });
+
+    chipsScrollViewport.addEventListener('mousemove', (e) => {
+      if (!isDown) return;
+      e.preventDefault();
+      const x = e.pageX - chipsScrollViewport.offsetLeft;
+      const walk = (x - startX) * 1.6;
+      if (Math.abs(walk) > 4) {
+        hasDragged = true;
+      }
+      chipsScrollViewport.scrollLeft = scrollStart - walk;
+      updateChipsNavButtons();
+    });
+
+    // Chip click handling
+    categoryChips.forEach((chip) => {
+      chip.addEventListener('click', (e) => {
+        if (hasDragged) {
+          e.preventDefault();
+          e.stopImmediatePropagation();
+          return;
+        }
+        categoryChips.forEach(c => c.classList.remove('active'));
+        chip.classList.add('active');
+        activeCategory = chip.getAttribute('data-category') || 'all';
+        renderBooksGrid();
+
+        // Smoothly center the clicked chip in view
+        chip.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+      });
+    });
+  }
+
+  // Language Helpers for English / Hinglish Toggle
+  function getBookSubtitle(book) {
+    if (currentLanguage === 'hinglish' && window.HINGLISH_DATA && window.HINGLISH_DATA[book.id] && window.HINGLISH_DATA[book.id].subtitle) {
+      return window.HINGLISH_DATA[book.id].subtitle;
+    }
+    return book.subtitle;
+  }
+
+  function getBookOverview(book) {
+    if (currentLanguage === 'hinglish' && window.HINGLISH_DATA && window.HINGLISH_DATA[book.id] && window.HINGLISH_DATA[book.id].overview) {
+      return window.HINGLISH_DATA[book.id].overview;
+    }
+    return book.overview;
+  }
+
+  function getChapterData(book, index) {
+    const defaultChapter = book.chapters[index];
+    if (currentLanguage === 'hinglish' && window.HINGLISH_DATA && window.HINGLISH_DATA[book.id] && window.HINGLISH_DATA[book.id].chapters && window.HINGLISH_DATA[book.id].chapters[index]) {
+      const hCh = window.HINGLISH_DATA[book.id].chapters[index];
+      return {
+        number: defaultChapter.number,
+        title: hCh.title || defaultChapter.title,
+        content: hCh.content || defaultChapter.content
+      };
+    }
+    return defaultChapter;
+  }
+
+  function syncLanguageToggleState() {
+    if (langBtnEn && langBtnHinglish) {
+      langBtnEn.classList.toggle('active', currentLanguage === 'en');
+      langBtnHinglish.classList.toggle('active', currentLanguage === 'hinglish');
+      langBtnEn.setAttribute('aria-pressed', currentLanguage === 'en' ? 'true' : 'false');
+      langBtnHinglish.setAttribute('aria-pressed', currentLanguage === 'hinglish' ? 'true' : 'false');
+    }
+  }
+
+  function setLanguage(lang) {
+    if (currentLanguage === lang) return;
+    currentLanguage = lang;
+    localStorage.setItem('paatshala-reading-lang', currentLanguage);
+    syncLanguageToggleState();
+
+    if (currentBook) {
+      // Re-populate Subtitle & Overview in selected language
+      const sub = getBookSubtitle(currentBook);
+      readerSubtitle.innerHTML = currentBook.author 
+        ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${currentBook.author}</span><div>${sub}</div>` 
+        : sub;
+      readerOverviewText.textContent = getBookOverview(currentBook);
+
+      // Re-render chapter tabs with translated titles
+      renderChapterTabs();
+
+      // Reload current chapter without jumping scroll
+      loadChapter(currentChapterIndex, false);
+
+      showToast(lang === 'hinglish' ? 'Language: Hinglish' : 'Language: English');
+    }
+  }
+
+  if (langBtnEn) {
+    langBtnEn.addEventListener('click', () => setLanguage('en'));
+  }
+  if (langBtnHinglish) {
+    langBtnHinglish.addEventListener('click', () => setLanguage('hinglish'));
+  }
+
+  // Expose current reading state for D chat navigation & restore
+  window.getCurrentReadingState = function () {
+    if (currentBook) {
+      return {
+        bookId: currentBook.id,
+        chapterIndex: currentChapterIndex || 0,
+        scrollY: Math.round(window.scrollY || window.pageYOffset || document.documentElement.scrollTop || 0)
+      };
+    }
+    return null;
+  };
+
+  // Parse deep-linked book hash (#book=id&ch=index&scroll=pos)
+  function parseBookHash(hashStr) {
+    if (!hashStr || !hashStr.startsWith('#book=')) return null;
+    const raw = hashStr.substring(6);
+    const parts = raw.split('&');
+    const bookId = decodeURIComponent(parts[0] || '');
+    let chapterIndex = 0;
+    let scrollY = 0;
+    for (let i = 1; i < parts.length; i++) {
+      const pair = parts[i].split('=');
+      if (pair[0] === 'ch') chapterIndex = parseInt(pair[1], 10) || 0;
+      if (pair[0] === 'scroll') scrollY = parseInt(pair[1], 10) || 0;
+    }
+    return { bookId, chapterIndex, scrollY };
+  }
 
   // 8. Open Book Reader Functionality
-  function openBookReader(book) {
+  function openBookReader(book, pushHistory = true, initialChapter = 0, initialScroll = null) {
     currentBook = book;
-    currentChapterIndex = 0;
+    currentChapterIndex = initialChapter;
+
+    syncLanguageToggleState();
 
     // Populate Reader Meta
     readerBarTitle.textContent = book.title;
     readerCoverWrap.innerHTML = book.coverIllustration;
     readerCategoryPill.textContent = book.category;
     readerTitle.textContent = book.title;
+    const sub = getBookSubtitle(book);
     readerSubtitle.innerHTML = book.author 
-      ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${book.author}</span><div>${book.subtitle}</div>` 
-      : book.subtitle;
+      ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${book.author}</span><div>${sub}</div>` 
+      : sub;
     readerReadTime.textContent = book.readTime;
     readerChaptersCount.textContent = `${book.chapters.length} Chapters`;
-    readerOverviewText.textContent = book.overview;
+    readerOverviewText.textContent = getBookOverview(book);
 
     // Bookmark State in Reader
     const isBookmarked = bookmarkedBookIds.includes(book.id);
     readerBookmarkBtn.classList.toggle('bookmarked', isBookmarked);
 
     // Build Chapter Tabs
-    chapterTabsBar.innerHTML = '';
-    book.chapters.forEach((ch, idx) => {
-      const tab = document.createElement('button');
-      tab.className = `chapter-tab-btn ${idx === 0 ? 'active' : ''}`;
-      tab.textContent = `Ch ${ch.number}: ${ch.title}`;
-      tab.addEventListener('click', () => {
-        loadChapter(idx);
-      });
-      chapterTabsBar.appendChild(tab);
-    });
+    renderChapterTabs();
 
-    // Load First Chapter
-    loadChapter(0);
+    // Load Requested Chapter (skip auto-scroll inside loadChapter if custom initialScroll is set)
+    loadChapter(initialChapter, initialScroll === null);
 
     // Switch View
     homeView.style.display = 'none';
     readerView.style.display = 'flex';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Display floating D icon on the side of the book reading page
+    if (window.setDChatVisibility) {
+      window.setDChatVisibility(true);
+    } else {
+      const widget = document.getElementById('dChatWidget');
+      if (widget) widget.classList.add('visible');
+    }
+
+    // Scroll restoration: restore exact reading scroll position if provided
+    if (initialScroll !== null && !isNaN(initialScroll) && initialScroll > 0) {
+      requestAnimationFrame(() => {
+        window.scrollTo({ top: initialScroll, behavior: 'auto' });
+        setTimeout(() => {
+          window.scrollTo({ top: initialScroll, behavior: 'auto' });
+        }, 80);
+      });
+    } else {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // Track state in browser history so browser Back/Forward cleanly toggles between book & library
+    if (pushHistory) {
+      history.pushState(
+        { view: 'reader', bookId: book.id, chapter: initialChapter },
+        document.title,
+        window.location.pathname + '#book=' + encodeURIComponent(book.id) + '&ch=' + initialChapter
+      );
+    }
 
     showToast(`Reading: ${book.title}`);
   }
 
+  function renderChapterTabs() {
+    if (!currentBook) return;
+    chapterTabsBar.innerHTML = '';
+    currentBook.chapters.forEach((ch, idx) => {
+      const chData = getChapterData(currentBook, idx);
+      const tab = document.createElement('button');
+      tab.className = `chapter-tab-btn ${idx === currentChapterIndex ? 'active' : ''}`;
+      tab.textContent = `Ch ${chData.number}: ${chData.title}`;
+      tab.addEventListener('click', () => {
+        loadChapter(idx, true);
+      });
+      chapterTabsBar.appendChild(tab);
+    });
+  }
+
   // 9. Load Specific Chapter
-  function loadChapter(index) {
+  function loadChapter(index, shouldScroll = true) {
     if (!currentBook || !currentBook.chapters[index]) return;
     currentChapterIndex = index;
-    const chapter = currentBook.chapters[index];
+    const chapter = getChapterData(currentBook, index);
 
     // Update chapter badge and title
     currentChapterBadge.textContent = `Chapter ${chapter.number}`;
@@ -319,7 +543,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tabs = chapterTabsBar.querySelectorAll('.chapter-tab-btn');
     tabs.forEach((tab, idx) => {
       tab.classList.toggle('active', idx === index);
-      if (idx === index) {
+      if (idx === index && shouldScroll) {
         tab.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
       }
     });
@@ -332,20 +556,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const progressPercent = Math.round(((index + 1) / currentBook.chapters.length) * 100);
     readingProgressFill.style.width = `${progressPercent}%`;
 
-    // Scroll smoothly to chapter heading
-    currentChapterBadge.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Sync history state with current chapter
+    if (window.history && window.history.replaceState && currentBook) {
+      history.replaceState(
+        { view: 'reader', bookId: currentBook.id, chapter: index },
+        document.title,
+        window.location.pathname + '#book=' + encodeURIComponent(currentBook.id) + '&ch=' + index
+      );
+    }
+
+    // Scroll smoothly to chapter heading if requested
+    if (shouldScroll) {
+      currentChapterBadge.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   }
 
   // Chapter Next / Prev Click Handlers
   prevChapterBtn.addEventListener('click', () => {
     if (currentChapterIndex > 0) {
-      loadChapter(currentChapterIndex - 1);
+      loadChapter(currentChapterIndex - 1, true);
     }
   });
 
   nextChapterBtn.addEventListener('click', () => {
     if (currentBook && currentChapterIndex < currentBook.chapters.length - 1) {
-      loadChapter(currentChapterIndex + 1);
+      loadChapter(currentChapterIndex + 1, true);
     }
   });
 
@@ -357,15 +592,70 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 10. Close Reader & Return to Library
-  function returnToLibrary() {
+  function returnToLibrary(pushHistory = false) {
+    currentBook = null;
     readerView.style.display = 'none';
     homeView.style.display = 'flex';
     window.scrollTo({ top: 0, behavior: 'smooth' });
     renderBooksGrid();
+
+    // Hide floating D icon when returning to library homepage
+    if (window.setDChatVisibility) {
+      window.setDChatVisibility(false);
+    } else {
+      const widget = document.getElementById('dChatWidget');
+      if (widget) widget.classList.remove('visible');
+    }
+
+    if (pushHistory) {
+      history.pushState({ view: 'library' }, document.title, window.location.pathname);
+    }
   }
 
-  readerBackBtn.addEventListener('click', returnToLibrary);
-  finishReadingBtn.addEventListener('click', returnToLibrary);
+  readerBackBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (window.location.hash) {
+      history.back();
+    } else {
+      returnToLibrary(true);
+    }
+  });
+
+  finishReadingBtn.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (window.location.hash) {
+      history.back();
+    } else {
+      returnToLibrary(true);
+    }
+  });
+
+  // Browser Back & Forward Popstate Handler (Keeps navigation between Library & Book pages)
+  window.addEventListener('popstate', (e) => {
+    const state = e.state;
+    const hash = window.location.hash;
+
+    if (state && state.view === 'reader' && state.bookId) {
+      const targetBook = BOOKS_DATA.find(b => b.id === state.bookId);
+      if (targetBook) {
+        const ch = typeof state.chapter === 'number' ? state.chapter : 0;
+        openBookReader(targetBook, false, ch, null);
+        return;
+      }
+    } else if (hash && hash.startsWith('#book=')) {
+      const parsed = parseBookHash(hash);
+      if (parsed && parsed.bookId) {
+        const targetBook = BOOKS_DATA.find(b => b.id === parsed.bookId);
+        if (targetBook) {
+          openBookReader(targetBook, false, parsed.chapterIndex || 0, parsed.scrollY || null);
+          return;
+        }
+      }
+    }
+
+    // Default: Return to library view
+    returnToLibrary(false);
+  });
 
   // 11. Font Size Adjustment Controls
   fontDecBtn.addEventListener('click', () => {
@@ -384,14 +674,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
 
-  // Initial Render
+  // Initial Library Render & History State
+  if (!history.state || history.state.view !== 'library') {
+    history.replaceState({ view: 'library' }, document.title, window.location.pathname);
+  }
+
   renderBooksGrid();
 
-  // 12. Floating Action Button "D"
-  const floatingDBtn = document.getElementById('floatingDBtn');
-  if (floatingDBtn) {
-    floatingDBtn.addEventListener('click', () => {
-      showToast('Paatshala - Discover India through stories!');
-    });
+  // Handle return-from-chat intent or deep-linked book hash
+  let returnState = null;
+  try {
+    const savedReturn = sessionStorage.getItem('paatshala_return_to_reading');
+    if (savedReturn) {
+      sessionStorage.removeItem('paatshala_return_to_reading');
+      returnState = JSON.parse(savedReturn);
+    }
+  } catch (e) {}
+
+  if (returnState && returnState.bookId) {
+    const matchedBook = BOOKS_DATA.find(b => b.id === returnState.bookId);
+    if (matchedBook) {
+      openBookReader(matchedBook, true, returnState.chapterIndex || 0, returnState.scrollY || 0);
+    }
+  } else if (window.location.hash && window.location.hash.startsWith('#book=')) {
+    const parsed = parseBookHash(window.location.hash);
+    if (parsed && parsed.bookId) {
+      const matchedBook = BOOKS_DATA.find(b => b.id === parsed.bookId);
+      if (matchedBook) {
+        openBookReader(matchedBook, false, parsed.chapterIndex || 0, parsed.scrollY || null);
+      }
+    }
+  } else {
+    // Hide D icon on main library page
+    if (window.setDChatVisibility) {
+      window.setDChatVisibility(false);
+    }
   }
 });

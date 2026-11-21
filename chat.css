@@ -144,6 +144,9 @@ html, body {
   justify-content: center;
   color: var(--text-secondary);
   text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
   transition: all var(--transition-fast);
   flex-shrink: 0;
 }

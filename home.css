@@ -419,23 +419,43 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   Category Filter Chips
+   Category Filter Chips with Smooth Sliding & Nav Controls
    -------------------------------------------------------------------------- */
 .category-chips-section {
   width: 100%;
-  overflow-x: auto;
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
 }
 
-.category-chips-section::-webkit-scrollbar {
+.chips-scroll-viewport {
+  flex: 1;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+  cursor: grab;
+  user-select: none;
+}
+
+.chips-scroll-viewport.is-dragging {
+  cursor: grabbing;
+  scroll-behavior: auto;
+}
+
+.chips-scroll-viewport::-webkit-scrollbar {
   display: none;
 }
 
 .chips-scroll {
   display: flex;
   gap: 0.5rem;
-  padding-bottom: 2px;
+  padding: 4px 2px;
+  width: max-content;
+  align-items: center;
 }
 
 .chip-btn {
@@ -449,6 +469,7 @@ html, body {
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
+  flex-shrink: 0;
   transition: all var(--transition-fast);
 }
 
@@ -462,6 +483,36 @@ html, body {
   color: #ffffff;
   border-color: transparent;
   box-shadow: 0 4px 12px -2px var(--primary-glow);
+}
+
+/* Nav Arrow Buttons (Slide Left & Right) */
+.chips-nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  z-index: 5;
+  transition: all var(--transition-fast);
+}
+
+.chips-nav-btn:hover {
+  background-color: var(--primary);
+  color: #ffffff;
+  border-color: var(--primary);
+  transform: scale(1.06);
+}
+
+.chips-nav-btn svg {
+  width: 16px;
+  height: 16px;
 }
 
 /* --------------------------------------------------------------------------
@@ -853,6 +904,44 @@ html, body {
   align-items: center;
   gap: 0.5rem;
   flex-shrink: 0;
+}
+
+/* Language Segmented Control (English / Hinglish) */
+.lang-segmented-control {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-full);
+  padding: 3px;
+  position: relative;
+  user-select: none;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.lang-pill-btn {
+  background: transparent;
+  border: none;
+  color: var(--text-secondary);
+  font-family: inherit;
+  font-size: 0.775rem;
+  font-weight: 600;
+  padding: 0.28rem 0.65rem;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  line-height: 1.2;
+}
+
+.lang-pill-btn:hover {
+  color: var(--text-main);
+}
+
+.lang-pill-btn.active {
+  background: var(--primary);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 2px 6px var(--primary-glow);
 }
 
 .font-controls {
@@ -1290,6 +1379,24 @@ html, body {
   }
 
   /* Reader View on Mobile */
+  .reader-bar-title {
+    display: none;
+  }
+
+  .reader-header-inner {
+    padding: 0 0.75rem;
+    gap: 0.5rem;
+  }
+
+  .reader-back-btn {
+    padding: 0.35rem 0.55rem;
+  }
+
+  .lang-pill-btn {
+    font-size: 0.725rem;
+    padding: 0.22rem 0.5rem;
+  }
+
   .story-article-card {
     padding: 1.5rem 1.15rem;
     border-radius: var(--radius-md);
@@ -1318,36 +1425,32 @@ html, body {
 }
 
 /* --------------------------------------------------------------------------
-   Floating "D" Action Button
+   Floating "D" Action Button - Bottom-Right Corner of Book-Reading Page
    -------------------------------------------------------------------------- */
 .floating-d-btn {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
   width: 52px;
   height: 52px;
   border-radius: 50%;
   background: var(--primary-gradient);
   color: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.25);
-  box-shadow: 0 10px 25px -4px var(--primary-glow), 0 4px 10px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 25px -4px var(--primary-glow), 0 4px 10px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  z-index: 999;
   user-select: none;
   transition: all var(--transition-fast);
 }
 
 .floating-d-btn:hover {
-  transform: translateY(-3px) scale(1.06);
-  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.55), 0 6px 14px rgba(0, 0, 0, 0.2);
+  transform: translateY(-3px) scale(1.08);
+  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.65), 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 .floating-d-btn:active {
-  transform: translateY(1px) scale(0.96);
-  box-shadow: 0 6px 15px -2px var(--primary-glow);
+  transform: translateY(1px) scale(0.95);
+  box-shadow: 0 4px 12px -2px var(--primary-glow);
 }
 
 .floating-d-btn:focus-visible {
@@ -1366,8 +1469,6 @@ html, body {
 
 @media (max-width: 480px) {
   .floating-d-btn {
-    bottom: max(18px, env(safe-area-inset-bottom, 18px));
-    right: 18px;
     width: 48px;
     height: 48px;
   }

@@ -3,38 +3,43 @@
    ========================================================================== */
 
 /* --------------------------------------------------------------------------
-   Floating "D" Toggle Button
+   Floating "D" Toggle Button - Bottom-Right Corner of Book-Reading Page
    -------------------------------------------------------------------------- */
 .d-chat-widget {
   position: fixed;
   bottom: 24px;
   right: 24px;
   z-index: 1000;
-  display: flex;
+  display: none; /* Completely hidden on main homepage; displayed only inside book reader */
   flex-direction: column;
   align-items: flex-end;
+  justify-content: center;
+}
+
+.d-chat-widget.visible {
+  display: flex;
 }
 
 .floating-d-btn {
-  width: 54px;
-  height: 54px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: var(--primary-gradient, linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%));
   color: #ffffff;
-  border: 2px solid rgba(255, 255, 255, 0.28);
-  box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.45), 0 4px 10px rgba(0, 0, 0, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  box-shadow: 0 10px 25px -4px rgba(79, 70, 229, 0.5), 0 4px 10px rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   user-select: none;
   position: relative;
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
 }
 
 .floating-d-btn:hover {
   transform: translateY(-3px) scale(1.08);
-  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.6), 0 6px 14px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 14px 30px -4px rgba(79, 70, 229, 0.65), 0 6px 14px rgba(0, 0, 0, 0.25);
 }
 
 .floating-d-btn:active {
@@ -48,11 +53,11 @@
 
 .d-letter {
   font-family: var(--font-family, var(--font-ui, sans-serif));
-  font-size: 1.55rem;
+  font-size: 1.45rem;
   font-weight: 800;
   line-height: 1;
   color: #ffffff;
-  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.25);
 }
 
 .d-btn-ping {

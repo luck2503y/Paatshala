@@ -123,17 +123,31 @@
 
       <!-- Category Filter Chips -->
       <section class="category-chips-section">
-        <div class="chips-scroll">
-          <button class="chip-btn active" data-category="all">All Books</button>
-          <button class="chip-btn" data-category="Indian Constitution">Indian Constitution</button>
-          <button class="chip-btn" data-category="Psychology">Psychology</button>
-          <button class="chip-btn" data-category="Fitness">Fitness</button>
-          <button class="chip-btn" data-category="Technology">Technology</button>
-          <button class="chip-btn" data-category="Democracy & Law">Democracy &amp; Law</button>
-          <button class="chip-btn" data-category="Science & Space">Science &amp; ISRO</button>
-          <button class="chip-btn" data-category="Environment">Environment</button>
-          <button class="chip-btn" data-category="Education">Education</button>
+        <button class="chips-nav-btn chips-prev-btn" id="chipsPrevBtn" aria-label="Slide categories left" title="Previous categories" style="display: none;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+          </svg>
+        </button>
+
+        <div class="chips-scroll-viewport" id="chipsScrollViewport">
+          <div class="chips-scroll" id="chipsScrollTrack">
+            <button class="chip-btn active" data-category="all">All Books</button>
+            <button class="chip-btn" data-category="Indian Constitution">Indian Constitution</button>
+            <button class="chip-btn" data-category="Psychology">Psychology</button>
+            <button class="chip-btn" data-category="Fitness">Fitness</button>
+            <button class="chip-btn" data-category="Technology">Technology</button>
+            <button class="chip-btn" data-category="Democracy & Law">Democracy &amp; Law</button>
+            <button class="chip-btn" data-category="Science & Space">Science &amp; ISRO</button>
+            <button class="chip-btn" data-category="Environment">Environment</button>
+            <button class="chip-btn" data-category="Education">Education</button>
+          </div>
         </div>
+
+        <button class="chips-nav-btn chips-next-btn" id="chipsNextBtn" aria-label="Slide categories right" title="More categories">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+          </svg>
+        </button>
       </section>
 
       <!-- Educational Welcome Hero Card -->
@@ -194,8 +208,14 @@
         <!-- Current Title Header in Bar -->
         <div class="reader-bar-title" id="readerBarTitle">The Constitution of India</div>
 
-        <!-- Reader Controls: Bookmark & Font Size -->
+        <!-- Reader Controls: Language, Bookmark & Font Size -->
         <div class="reader-actions">
+          <!-- Language Toggle: English / Hinglish -->
+          <div class="lang-segmented-control" id="langSegmentedControl" role="group" aria-label="Reading Language">
+            <button type="button" class="lang-pill-btn active" id="langBtnEn" data-lang="en">English</button>
+            <button type="button" class="lang-pill-btn" id="langBtnHinglish" data-lang="hinglish">Hinglish</button>
+          </div>
+
           <!-- Font Size Adjuster -->
           <div class="font-controls">
             <button class="font-btn" id="fontDecBtn" title="Decrease font size" aria-label="Smaller text">A-</button>
@@ -291,13 +311,9 @@
     <span class="toast-text" id="appToastText">Notification</span>
   </div>
 
-  <!-- Floating Action Button "D" -->
-  <button class="floating-d-btn" id="floatingDBtn" aria-label="Paatshala D Action" title="Paatshala">
-    <span class="d-letter">D</span>
-  </button>
-
   <!-- Scripts -->
   <script src="books-data.js"></script>
+  <script src="hinglish-data.js"></script>
   <script src="home.js"></script>
   <script src="d-chat.js"></script>
 </body>

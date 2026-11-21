@@ -7,6 +7,47 @@
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
   <title>Paatshala - Chat Room</title>
+  
+  <!-- Chat Protection & Anti-Direct Access Guard -->
+  <script>
+    (function () {
+      const urlParams = new URLSearchParams(window.location.search);
+      const authParam = urlParams.get('auth');
+      const storedTicket = sessionStorage.getItem('paatshala_chat_authorized_ticket');
+
+      const isAuthorized = authParam && storedTicket && authParam === storedTicket;
+
+      if (!isAuthorized) {
+        // Chat page must ONLY be accessible through the floating D icon + password.
+        // Direct URLs, browser Back/Forward buttons, or normal navigation are blocked!
+        sessionStorage.removeItem('paatshala_chat_authorized_ticket');
+        sessionStorage.removeItem('paatshala_chat_authenticated');
+        window.location.replace('home.html');
+        return;
+      }
+
+      // Capture source book parameters if coming from reader
+      const fromBook = urlParams.get('fromBook');
+      const fromCh = urlParams.get('ch');
+      const fromScroll = urlParams.get('scroll');
+      if (fromBook) {
+        sessionStorage.setItem('paatshala_chat_source_book', JSON.stringify({
+          bookId: fromBook,
+          chapterIndex: parseInt(fromCh, 10) || 0,
+          scrollY: parseInt(fromScroll, 10) || 0
+        }));
+      }
+
+      // Immediately consume ticket so browser Back/Forward CANNOT reuse it
+      sessionStorage.removeItem('paatshala_chat_authorized_ticket');
+
+      // Clean query parameter from address bar and history without page reload
+      if (window.history && window.history.replaceState) {
+        window.history.replaceState({ page: 'chat' }, document.title, 'chat.html');
+      }
+    })();
+  </script>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -20,12 +61,12 @@
     <header class="chat-room-header">
       <div class="header-left">
         <!-- Back Button to Home / Library -->
-        <a href="home.html" class="chat-back-btn" aria-label="Back to Paatshala Home" title="Back to Home">
+        <button type="button" class="chat-back-btn" id="chatBackBtn" aria-label="Back to Paatshala Home" title="Back to Home">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="19" y1="12" x2="5" y2="12"></line>
             <polyline points="12 19 5 12 12 5"></polyline>
           </svg>
-        </a>
+        </button>
 
         <!-- Current Active Contact Profile -->
         <div class="active-contact-profile" id="activeContactBtn">

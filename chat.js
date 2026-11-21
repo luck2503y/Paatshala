@@ -248,6 +248,65 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
+  // Back Button Navigation - cleanly returns to the source book reading page
+  const chatBackBtn = document.getElementById('chatBackBtn') || document.querySelector('.chat-back-btn');
+  if (chatBackBtn) {
+    chatBackBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+
+      let targetBookId = null;
+      let targetChapter = 0;
+      let targetScroll = 0;
+
+      try {
+        const storedSource = sessionStorage.getItem('paatshala_chat_source_book');
+        if (storedSource) {
+          const parsed = JSON.parse(storedSource);
+          if (parsed && parsed.bookId) {
+            targetBookId = parsed.bookId;
+            targetChapter = typeof parsed.chapterIndex === 'number' ? parsed.chapterIndex : 0;
+            targetScroll = typeof parsed.scrollY === 'number' ? parsed.scrollY : 0;
+          }
+        }
+      } catch (err) {}
+
+      // Fallback to URL search parameters if still present
+      if (!targetBookId) {
+        const urlParams = new URLSearchParams(window.location.search);
+        targetBookId = urlParams.get('fromBook');
+        if (urlParams.get('ch')) targetChapter = parseInt(urlParams.get('ch'), 10) || 0;
+        if (urlParams.get('scroll')) targetScroll = parseInt(urlParams.get('scroll'), 10) || 0;
+      }
+
+      // Store return intent in sessionStorage so home.js restores exact chapter and scroll position
+      if (targetBookId) {
+        sessionStorage.setItem('paatshala_return_to_reading', JSON.stringify({
+          bookId: targetBookId,
+          chapterIndex: targetChapter,
+          scrollY: targetScroll
+        }));
+      }
+
+      // Clear chat authentication ticket & source book record
+      sessionStorage.removeItem('paatshala_chat_authorized_ticket');
+      sessionStorage.removeItem('paatshala_chat_authenticated');
+      sessionStorage.removeItem('paatshala_chat_source_book');
+
+      // Navigate back: if entered from a book, return directly to that book's reading page
+      if (targetBookId) {
+        window.location.replace(`home.html#book=${encodeURIComponent(targetBookId)}&ch=${targetChapter}&scroll=${targetScroll}`);
+      } else {
+        window.location.replace('home.html');
+      }
+    });
+  }
+
+  // Clear auth ticket on pagehide/unload so back/forward cannot re-enter chat without D icon password
+  window.addEventListener('pagehide', () => {
+    sessionStorage.removeItem('paatshala_chat_authorized_ticket');
+    sessionStorage.removeItem('paatshala_chat_authenticated');
+  });
+
   // 2. Helper: Current Time String
   function getCurrentTimeString() {
     const now = new Date();
