@@ -416,15 +416,22 @@ export const ChatScreen: React.FC = () => {
         </View>
       </View>
 
-      {/* Messages Thread */}
-      <ScrollView
-        ref={scrollViewRef}
-        contentContainerStyle={[
-          styles.messagesContainer,
-          { paddingBottom: insets.bottom + 90 },
-        ]}
-        showsVerticalScrollIndicator={false}
+      {/* Messages Thread & Input Area wrapped in KeyboardAvoidingView */}
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+        style={{ flex: 1 }}
       >
+        {/* Messages Thread */}
+        <ScrollView
+          ref={scrollViewRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={[
+            styles.messagesContainer,
+            { paddingBottom: 16 },
+          ]}
+          showsVerticalScrollIndicator={false}
+        >
         {/* Date Pill */}
         <View style={styles.datePillRow}>
           <View style={[styles.datePill, { backgroundColor: theme.chipBg, borderColor: theme.border }]}>
@@ -551,9 +558,7 @@ export const ChatScreen: React.FC = () => {
       </ScrollView>
 
       {/* Floating Bottom Input Bar */}
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+      <View
         style={[
           styles.bottomBarContainer,
           {
@@ -708,6 +713,7 @@ export const ChatScreen: React.FC = () => {
             </ScrollView>
           </View>
         )}
+      </View>
       </KeyboardAvoidingView>
 
       {/* Options Menu Modal */}

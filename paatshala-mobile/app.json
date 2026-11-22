@@ -1,25 +1,41 @@
 {
   "expo": {
-    "name": "paatshala-mobile",
-    "slug": "paatshala-mobile",
+    "name": "Paatshala",
+    "slug": "paatshala",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
+    "icon": "./assets/images/logo.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/images/logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#07090E"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.paatshala.app"
     },
     "android": {
+      "package": "com.paatshala.app",
+      "versionCode": 1,
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
+        "backgroundColor": "#07090E",
+        "foregroundImage": "./assets/images/logo.png"
       },
+      "permissions": [
+        "READ_EXTERNAL_STORAGE",
+        "WRITE_EXTERNAL_STORAGE"
+      ],
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": "./assets/images/logo.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "41ad269b-cc9b-4570-94b2-97bd44d739fb"
+      }
+    },
+    "owner": "lucky2503"
   }
 }
