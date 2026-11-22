@@ -4,13 +4,8 @@
     "slug": "paatshala",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/logo.png",
+    "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
-    "splash": {
-      "image": "./assets/images/logo.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#07090E"
-    },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.paatshala.app"
@@ -20,7 +15,7 @@
       "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#07090E",
-        "foregroundImage": "./assets/images/logo.png"
+        "foregroundImage": "./assets/android-icon-foreground.png"
       },
       "permissions": [
         "READ_EXTERNAL_STORAGE",
@@ -29,7 +24,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "favicon": "./assets/images/logo.png"
+      "favicon": "./assets/icon.png"
     },
     "extra": {
       "eas": {
