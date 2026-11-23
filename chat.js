@@ -18,6 +18,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   const syncChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_chat_sync') : null;
   const presenceChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_presence_sync') : null;
 
+  // Real-time instantaneous cross-tab synchronization listener
+  window.addEventListener('storage', (e) => {
+    if (e.key === SHARED_STORAGE_KEY && e.newValue) {
+      try {
+        const parsed = JSON.parse(e.newValue);
+        if (Array.isArray(parsed)) {
+          sharedMessages = parsed;
+          renderChatStream();
+        }
+      } catch (err) {}
+    }
+  });
+
   // Real-time Independent Presence Controller (A and D)
   function sendPresence(status) {
     try {
@@ -457,9 +470,13 @@ document.addEventListener('DOMContentLoaded', async () => {
       `;
     }
 
-    // Attach Long-Press action sheet to all message bubbles
+    // Attach Click & Long-Press action sheet to all message bubbles
     const bubbleEl = row.querySelector('.chat-bubble');
     if (bubbleEl && msgId) {
+      bubbleEl.addEventListener('click', (e) => {
+        if (e.target.closest('.bubble-image-container') || e.target.closest('.bubble-image')) return;
+        openMessageActionSheet(msgId);
+      });
       attachLongPressListener(bubbleEl, () => {
         openMessageActionSheet(msgId);
       });
@@ -576,12 +593,18 @@ document.addEventListener('DOMContentLoaded', async () => {
       msgActionEditBtn.style.display = (msg.sender === currentUser) ? 'flex' : 'none';
     }
 
+    // Only allow Delete for Everyone if current user sent this message
+    if (msgActionDeleteForEveryoneBtn) {
+      msgActionDeleteForEveryoneBtn.style.display = (msg.sender === currentUser) ? 'flex' : 'none';
+    }
+
     if (msgActionBackdrop) {
       msgActionBackdrop.style.display = 'flex';
     }
   }
 
   function closeMessageActionSheet() {
+    activeActionMsgId = null;
     if (msgActionBackdrop) {
       msgActionBackdrop.style.display = 'none';
     }
@@ -590,20 +613,25 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   function deleteSelectedMessage(isForEveryone) {
     if (!activeActionMsgId) return;
-    const targetId = activeActionMsgId;
+    const targetId = String(activeActionMsgId).trim();
     closeMessageActionSheet();
 
     if (isForEveryone) {
+      const target = sharedMessages.find(m => String(m.id).trim() === targetId);
+      if (!target || target.sender !== currentUser) {
+        showToast('You can only delete your own messages for everyone');
+        return;
+      }
       // 1. Delete for Everyone: completely remove message
-      sharedMessages = sharedMessages.filter(m => m.id !== targetId);
+      sharedMessages = sharedMessages.filter(m => String(m.id).trim() !== targetId);
       saveLocalSharedMessages();
-      postServerAction({ action: 'deleteForEveryone', id: targetId });
+      postServerAction({ action: 'deleteForEveryone', id: targetId, user: currentUser });
       if (syncChannel) {
         syncChannel.postMessage({ type: 'DELETE_FOR_EVERYONE', id: targetId });
       }
     } else {
       // 2. Delete for Me: hide only for current user
-      const target = sharedMessages.find(m => m.id === targetId);
+      const target = sharedMessages.find(m => String(m.id).trim() === targetId);
       if (target) {
         if (!target.deletedFor) target.deletedFor = [];
         if (!target.deletedFor.includes(currentUser)) {
@@ -886,7 +914,8 @@ document.addEventListener('DOMContentLoaded', async () => {
           renderChatStream();
         }
       } else if (data.type === 'DELETE_FOR_EVERYONE') {
-        sharedMessages = sharedMessages.filter(m => m.id !== data.id);
+        const delId = String(data.id).trim();
+        sharedMessages = sharedMessages.filter(m => String(m.id).trim() !== delId);
         saveLocalSharedMessages();
         renderChatStream();
       } else if (data.type === 'DELETE_FOR_ME') {
@@ -1071,11 +1100,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (attachmentThumbImg) attachmentThumbImg.src = '';
   }
 
+  const imageModalDownload = document.getElementById('imageModalDownload');
+
   function openLightbox(src) {
     if (imageModalTarget && imageModalBackdrop) {
       imageModalTarget.src = src;
+      if (imageModalDownload) {
+        imageModalDownload.href = src;
+        imageModalDownload.download = `paatshala_shared_${Date.now()}.png`;
+      }
       imageModalBackdrop.style.display = 'flex';
     }
+  }
+
+  if (imageModalDownload) {
+    imageModalDownload.addEventListener('click', () => {
+      showToast('Image downloading to your device');
+    });
   }
 
   function closeLightbox() {

@@ -321,15 +321,8 @@
     const presenceChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('paatshala_presence_sync') : null;
 
     function applyPresence(presence) {
-      if (!presence) return;
-      const dPing = document.getElementById('dBtnPing');
-      if (dPing) {
-        dPing.style.display = presence.D ? 'block' : 'none';
-      }
-      const aPing = document.getElementById('aBtnPing');
-      if (aPing) {
-        aPing.style.display = presence.A ? 'block' : 'none';
-      }
+      // Online/offline indicator is shown inside the chat page only, not on floating icons
+      return;
     }
 
     async function checkServerPresence() {
@@ -349,17 +342,7 @@
     // BroadcastChannel cross-tab instant sync
     if (presenceChannel) {
       presenceChannel.onmessage = (event) => {
-        const data = event.data;
-        if (!data || !data.user) return;
-        const isOnline = data.status === 'online';
-        if (data.user === 'D') {
-          const dPing = document.getElementById('dBtnPing');
-          if (dPing) dPing.style.display = isOnline ? 'block' : 'none';
-        }
-        if (data.user === 'A') {
-          const aPing = document.getElementById('aBtnPing');
-          if (aPing) aPing.style.display = isOnline ? 'block' : 'none';
-        }
+        // Presence is monitored for chat page only, not shown on floating icons
       };
     }
 

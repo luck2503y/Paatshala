@@ -164,25 +164,6 @@ export const LibraryScreen: React.FC = () => {
         })}
       </ScrollView>
 
-      {/* Hero Quote Card */}
-      <View
-        style={[
-          styles.heroCard,
-          {
-            backgroundColor: theme.primary,
-            shadowColor: theme.primary,
-          },
-        ]}
-      >
-        <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>National Heritage &amp; Science</Text>
-        </View>
-        <Text style={styles.heroHeading}>Explore India’s Journey</Text>
-        <Text style={styles.heroSubtext}>
-          Original educational stories inspired by our Constitution, democracy, space exploration, and nation-building.
-        </Text>
-      </View>
-
       {/* Section Header Row */}
       <View style={styles.sectionHeaderRow}>
         <Text style={[styles.sectionTitle, { color: theme.textPrimary }]}>Educational Storybooks</Text>

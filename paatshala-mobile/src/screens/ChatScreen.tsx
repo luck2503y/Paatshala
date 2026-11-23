@@ -12,12 +12,17 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
+  ActivityIndicator,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
 import Svg, { Path, Line, Polyline, Circle, Rect } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as Sharing from 'expo-sharing';
 
 import { useApp } from '../context/AppContext';
 import { ThemeToggle } from '../components/ThemeToggle';
@@ -90,31 +95,85 @@ export const ChatScreen: React.FC = () => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [editText, setEditText] = useState('');
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [isSavingImage, setIsSavingImage] = useState(false);
+  const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   const scrollViewRef = useRef<any>(null);
+
+  // Track keyboard state for layout adjustment and auto-scrolling
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+
+    const onShow = () => {
+      setIsKeyboardVisible(true);
+      setTimeout(() => {
+        scrollViewRef.current?.scrollToEnd({ animated: true });
+      }, 60);
+    };
+
+    const onHide = () => {
+      setIsKeyboardVisible(false);
+    };
+
+    const showSub = Keyboard.addListener(showEvent, onShow);
+    const hideSub = Keyboard.addListener(hideEvent, onHide);
+
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   const otherUser = chatRole === 'A' ? 'D' : 'A';
   const otherAvatarXml = otherUser === 'A' ? PANDA_AVATAR_SVG : BLACK_PANTHER_AVATAR_SVG;
 
-  // Load Messages from AsyncStorage
+  // Load Messages from AsyncStorage with background sync
   useEffect(() => {
+    let isMounted = true;
+
     (async () => {
       try {
         const stored = await AsyncStorage.getItem(SHARED_STORAGE_KEY);
-        if (stored) {
+        if (stored !== null) {
           const parsed = JSON.parse(stored);
-          if (Array.isArray(parsed) && parsed.length > 0) {
+          if (Array.isArray(parsed) && isMounted) {
             setMessages(parsed);
             return;
           }
         }
-        // Initialize with default seed messages if storage is empty
-        setMessages(INITIAL_SEED_MESSAGES);
-        await AsyncStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(INITIAL_SEED_MESSAGES));
+        if (isMounted) {
+          // Initialize with default seed messages ONLY if key never existed
+          setMessages(INITIAL_SEED_MESSAGES);
+          await AsyncStorage.setItem(SHARED_STORAGE_KEY, JSON.stringify(INITIAL_SEED_MESSAGES));
+        }
       } catch (e) {
         console.error('Error loading chat messages:', e);
       }
     })();
+
+    // Background sync polling: keeps A and D views synchronized in real time
+    const syncTimer = setInterval(async () => {
+      try {
+        const stored = await AsyncStorage.getItem(SHARED_STORAGE_KEY);
+        if (stored !== null && isMounted) {
+          const parsed = JSON.parse(stored);
+          if (Array.isArray(parsed)) {
+            setMessages((prev) => {
+              if (JSON.stringify(prev) !== JSON.stringify(parsed)) {
+                return parsed;
+              }
+              return prev;
+            });
+          }
+        }
+      } catch (e) {}
+    }, 800);
+
+    return () => {
+      isMounted = false;
+      clearInterval(syncTimer);
+    };
   }, []);
 
   const saveMessages = async (updated: ChatMessage[]) => {
@@ -169,7 +228,7 @@ export const ChatScreen: React.FC = () => {
     } catch (e) {}
 
     const newMsg: ChatMessage = {
-      id: Date.now().toString(),
+      id: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 7)}`,
       sender: chatRole,
       text: trimmed,
       image: pendingImage,
@@ -210,6 +269,110 @@ export const ChatScreen: React.FC = () => {
     }
   };
 
+  // Convert base64 or remote URL into a clean local file URI for saving/sharing
+  const getLocalImageUri = async (uri: string): Promise<string> => {
+    if (uri.startsWith('data:')) {
+      const match = uri.match(/^data:image\/([a-zA-Z0-9]+);base64,(.+)$/);
+      const ext = match && match[1] ? match[1] : 'jpg';
+      const base64Data = match ? match[2] : uri.split(',')[1];
+      const filename = `paatshala_img_${Date.now()}.${ext}`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      await FileSystem.writeAsStringAsync(fileUri, base64Data, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      return fileUri;
+    }
+    if (uri.startsWith('http://') || uri.startsWith('https://')) {
+      const ext = uri.split('.').pop()?.split('?')[0] || 'jpg';
+      const filename = `paatshala_img_${Date.now()}.${ext}`;
+      const fileUri = `${FileSystem.cacheDirectory}${filename}`;
+      const downloadRes = await FileSystem.downloadAsync(uri, fileUri);
+      return downloadRes.uri;
+    }
+    return uri;
+  };
+
+  // Download / Save Image to Device Gallery or Photos
+  const handleSaveImage = async (imageUri: string | null) => {
+    if (!imageUri) return;
+    try {
+      setIsSavingImage(true);
+      try {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      } catch (e) {}
+
+      const localUri = await getLocalImageUri(imageUri);
+      const perm = await MediaLibrary.requestPermissionsAsync();
+
+      if (perm.status === 'granted') {
+        const asset = await MediaLibrary.createAssetAsync(localUri);
+        try {
+          const album = await MediaLibrary.getAlbumAsync('Paatshala');
+          if (!album) {
+            await MediaLibrary.createAlbumAsync('Paatshala', asset, false);
+          } else {
+            await MediaLibrary.addAssetsToAlbumAsync([asset], album, false);
+          }
+        } catch (albumErr) {
+          // Album is optional, photo is already in Camera Roll
+        }
+
+        showToast('Image saved to Photos / Gallery');
+        try {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+        } catch (e) {}
+      } else {
+        // Fallback: If permission is denied or restricted, open native system share/save sheet
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(localUri, {
+            dialogTitle: 'Save Image',
+          });
+          showToast('Image opened for saving');
+        } else {
+          Alert.alert(
+            'Permission Needed',
+            'Photo library permission is needed to save images directly to your gallery. Please enable it in Settings.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Save image error:', err);
+      try {
+        const localUri = await getLocalImageUri(imageUri);
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(localUri, {
+            dialogTitle: 'Save Image',
+          });
+          showToast('Image opened for saving');
+          return;
+        }
+      } catch (e) {}
+      showToast('Could not save image');
+    } finally {
+      setIsSavingImage(false);
+    }
+  };
+
+  // Share Image via System Sheet
+  const handleShareImage = async (imageUri: string | null) => {
+    if (!imageUri) return;
+    try {
+      const localUri = await getLocalImageUri(imageUri);
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(localUri, {
+          dialogTitle: 'Share Paatshala Image',
+        });
+      } else {
+        showToast('Sharing not available on this device');
+      }
+    } catch (e) {
+      console.error('Share image error:', e);
+      showToast('Could not share image');
+    }
+  };
+
   // Message Actions
   const handleLongPress = (msg: ChatMessage) => {
     try {
@@ -243,6 +406,7 @@ export const ChatScreen: React.FC = () => {
 
   const handleSaveEdit = async () => {
     if (!selectedMessage) return;
+    const targetId = String(selectedMessage.id).trim();
     const trimmed = editText.trim();
     if (!trimmed) return;
 
@@ -251,7 +415,7 @@ export const ChatScreen: React.FC = () => {
     } catch (e) {}
 
     const updated = messages.map((m) =>
-      m.id === selectedMessage.id ? { ...m, text: trimmed, isEdited: true } : m
+      String(m.id).trim() === targetId ? { ...m, text: trimmed, isEdited: true } : m
     );
     setShowEditModal(false);
     setSelectedMessage(null);
@@ -262,18 +426,21 @@ export const ChatScreen: React.FC = () => {
   // Delete for Me (Independent)
   const handleDeleteForMe = async () => {
     if (!selectedMessage) return;
+    const targetId = String(selectedMessage.id).trim();
     setShowActionSheet(false);
+    setSelectedMessage(null);
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     } catch (e) {}
 
     const updated = messages.map((m) => {
-      if (m.id === selectedMessage.id) {
-        const deletedFor = m.deletedFor || [];
+      if (String(m.id).trim() === targetId) {
+        const deletedFor = Array.isArray(m.deletedFor) ? [...m.deletedFor] : [];
         if (!deletedFor.includes(chatRole)) {
-          return { ...m, deletedFor: [...deletedFor, chatRole] };
+          deletedFor.push(chatRole);
         }
+        return { ...m, deletedFor };
       }
       return m;
     });
@@ -282,16 +449,24 @@ export const ChatScreen: React.FC = () => {
     showToast('Deleted for you');
   };
 
-  // Delete for Everyone
+  // Delete for Everyone (Synchronized for both A and D - Sender ownership enforced)
   const handleDeleteForEveryone = async () => {
     if (!selectedMessage) return;
+    if (selectedMessage.sender !== chatRole) {
+      showToast('You can only delete your own messages for everyone');
+      setShowActionSheet(false);
+      setSelectedMessage(null);
+      return;
+    }
+    const targetId = String(selectedMessage.id).trim();
     setShowActionSheet(false);
+    setSelectedMessage(null);
 
     try {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
     } catch (e) {}
 
-    const updated = messages.filter((m) => m.id !== selectedMessage.id);
+    const updated = messages.filter((m) => !(String(m.id).trim() === targetId && m.sender === chatRole));
     await saveMessages(updated);
     showToast('Deleted for everyone');
   };
@@ -301,7 +476,7 @@ export const ChatScreen: React.FC = () => {
     setShowOptionsMenu(false);
     Alert.alert(
       'Clear Chat',
-      `Are you sure you want to clear chat messages for Participant ${chatRole}? This will not affect the other participant's view.`,
+      `Are you sure you want to clear chat messages? This will not affect ${otherUser}'s view.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -313,30 +488,19 @@ export const ChatScreen: React.FC = () => {
             } catch (e) {}
 
             const updated = messages.map((m) => {
-              const deletedFor = m.deletedFor || [];
+              const deletedFor = Array.isArray(m.deletedFor) ? [...m.deletedFor] : [];
               if (!deletedFor.includes(chatRole)) {
-                return { ...m, deletedFor: [...deletedFor, chatRole] };
+                deletedFor.push(chatRole);
               }
-              return m;
+              return { ...m, deletedFor };
             });
 
             await saveMessages(updated);
-            showToast(`Chat cleared for Participant ${chatRole}`);
+            showToast('Chat cleared');
           },
         },
       ]
     );
-  };
-
-  // Switch Role (Demo toggle between A and D)
-  const handleSwitchRole = () => {
-    setShowOptionsMenu(false);
-    const nextRole = chatRole === 'A' ? 'D' : 'A';
-    setChatRole(nextRole);
-    try {
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    } catch (e) {}
-    showToast(`Switched view to Participant ${nextRole}`);
   };
 
   // Filter messages visible to current participant
@@ -381,16 +545,9 @@ export const ChatScreen: React.FC = () => {
             </View>
 
             <View style={styles.profileMeta}>
-              <View style={styles.nameRow}>
-                <Text style={[styles.contactName, { color: theme.textPrimary }]}>
-                  {otherUser}
-                </Text>
-                <View style={[styles.roleBadge, { backgroundColor: theme.chipBg, borderColor: theme.border }]}>
-                  <Text style={[styles.roleBadgeText, { color: theme.primary }]}>
-                    Participant {otherUser}
-                  </Text>
-                </View>
-              </View>
+              <Text style={[styles.contactName, { color: theme.textPrimary }]}>
+                {otherUser}
+              </Text>
               <Text style={styles.onlineText}>Online</Text>
             </View>
           </View>
@@ -418,8 +575,8 @@ export const ChatScreen: React.FC = () => {
 
       {/* Messages Thread & Input Area wrapped in KeyboardAvoidingView */}
       <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 10 : 0}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? insets.top + 58 : 0}
         style={{ flex: 1 }}
       >
         {/* Messages Thread */}
@@ -430,7 +587,15 @@ export const ChatScreen: React.FC = () => {
             styles.messagesContainer,
             { paddingBottom: 16 },
           ]}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }}
+          onLayout={() => {
+            scrollViewRef.current?.scrollToEnd({ animated: false });
+          }}
         >
         {/* Date Pill */}
         <View style={styles.datePillRow}>
@@ -449,7 +614,7 @@ export const ChatScreen: React.FC = () => {
             </View>
             <Text style={[styles.emptyTitle, { color: theme.textPrimary }]}>No messages yet</Text>
             <Text style={[styles.emptySubtitle, { color: theme.textSecondary }]}>
-              Say hello to Participant {otherUser} to start the conversation!
+              Say hello to {otherUser} to start the conversation!
             </Text>
           </View>
         )}
@@ -463,6 +628,7 @@ export const ChatScreen: React.FC = () => {
             <TouchableOpacity
               key={msg.id}
               activeOpacity={0.88}
+              onPress={() => handleLongPress(msg)}
               onLongPress={() => handleLongPress(msg)}
               delayLongPress={300}
               style={[
@@ -562,7 +728,7 @@ export const ChatScreen: React.FC = () => {
         style={[
           styles.bottomBarContainer,
           {
-            paddingBottom: Math.max(insets.bottom, 10),
+            paddingBottom: isKeyboardVisible ? 8 : Math.max(insets.bottom, 10),
             backgroundColor: theme.card,
             borderTopColor: theme.border,
           },
@@ -593,7 +759,12 @@ export const ChatScreen: React.FC = () => {
           {/* Emoji Toggle Button */}
           <TouchableOpacity
             activeOpacity={0.7}
-            onPress={() => setShowEmojiPicker(!showEmojiPicker)}
+            onPress={() => {
+              if (!showEmojiPicker) {
+                Keyboard.dismiss();
+              }
+              setShowEmojiPicker(!showEmojiPicker);
+            }}
             style={styles.iconActionBtn}
             accessibilityLabel="Open emoji picker"
           >
@@ -631,6 +802,12 @@ export const ChatScreen: React.FC = () => {
             placeholderTextColor={theme.textSecondary}
             value={inputText}
             onChangeText={setInputText}
+            onFocus={() => {
+              setShowEmojiPicker(false);
+              setTimeout(() => {
+                scrollViewRef.current?.scrollToEnd({ animated: true });
+              }, 80);
+            }}
             multiline
             maxLength={1000}
           />
@@ -729,30 +906,7 @@ export const ChatScreen: React.FC = () => {
               <View style={[styles.menuCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
                 <Text style={[styles.menuTitle, { color: theme.textPrimary }]}>Chat Options</Text>
 
-                {/* Switch Role Option */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleSwitchRole}
-                  style={[styles.menuItem, { borderBottomColor: theme.border }]}
-                >
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={theme.primary} strokeWidth={2}>
-                    <Polyline points="16 3 21 3 21 8" />
-                    <Line x1="4" y1="20" x2="21" y2="3" />
-                    <Polyline points="21 16 21 21 16 21" />
-                    <Line x1="15" y1="15" x2="21" y2="21" />
-                    <Line x1="4" y1="4" x2="9" y2="9" />
-                  </Svg>
-                  <View style={styles.menuItemTextWrap}>
-                    <Text style={[styles.menuItemText, { color: theme.textPrimary }]}>
-                      Switch to Participant {otherUser}
-                    </Text>
-                    <Text style={[styles.menuItemSubtext, { color: theme.textSecondary }]}>
-                      Test two-way conversation from {otherUser}&apos;s viewpoint
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-
-                {/* Clear Chat Option (Independent) */}
+                {/* Clear Chat Option */}
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={handleClearChat}
@@ -767,7 +921,7 @@ export const ChatScreen: React.FC = () => {
                       Clear Chat
                     </Text>
                     <Text style={[styles.menuItemSubtext, { color: theme.textSecondary }]}>
-                      Clears messages for Participant {chatRole} only
+                      Clears messages for you only
                     </Text>
                   </View>
                 </TouchableOpacity>
@@ -791,9 +945,15 @@ export const ChatScreen: React.FC = () => {
         visible={showActionSheet}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowActionSheet(false)}
+        onRequestClose={() => {
+          setShowActionSheet(false);
+          setSelectedMessage(null);
+        }}
       >
-        <TouchableWithoutFeedback onPress={() => setShowActionSheet(false)}>
+        <TouchableWithoutFeedback onPress={() => {
+          setShowActionSheet(false);
+          setSelectedMessage(null);
+        }}>
           <View style={styles.actionSheetBackdrop}>
             <TouchableWithoutFeedback>
               <View style={[styles.actionSheetCard, { backgroundColor: theme.card, borderColor: theme.border }]}>
@@ -818,6 +978,27 @@ export const ChatScreen: React.FC = () => {
                   </Svg>
                   <Text style={[styles.actionSheetText, { color: theme.textPrimary }]}>Copy Message</Text>
                 </TouchableOpacity>
+
+                {/* Save Image to Gallery (if message has image) */}
+                {!!selectedMessage?.image && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={() => {
+                      const img = selectedMessage.image;
+                      setShowActionSheet(false);
+                      setSelectedMessage(null);
+                      if (img) handleSaveImage(img);
+                    }}
+                    style={styles.actionSheetRow}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#3B82F6" strokeWidth={2}>
+                      <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                      <Polyline points="7 10 12 15 17 10" />
+                      <Line x1="12" y1="15" x2="12" y2="3" />
+                    </Svg>
+                    <Text style={[styles.actionSheetText, { color: '#3B82F6' }]}>Save Image to Gallery</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Edit Message (Only for sender) */}
                 {selectedMessage?.sender === chatRole && !!selectedMessage?.text && (
@@ -847,25 +1028,30 @@ export const ChatScreen: React.FC = () => {
                   <Text style={[styles.actionSheetText, { color: '#F59E0B' }]}>Delete for Me</Text>
                 </TouchableOpacity>
 
-                {/* Delete for Everyone */}
-                <TouchableOpacity
-                  activeOpacity={0.7}
-                  onPress={handleDeleteForEveryone}
-                  style={styles.actionSheetRow}
-                >
-                  <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2}>
-                    <Polyline points="3 6 5 6 21 6" />
-                    <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <Line x1="10" y1="11" x2="10" y2="17" />
-                    <Line x1="14" y1="11" x2="14" y2="17" />
-                  </Svg>
-                  <Text style={[styles.actionSheetText, { color: '#EF4444' }]}>Delete for Everyone</Text>
-                </TouchableOpacity>
+                {/* Delete for Everyone - Only available if message was sent by current user */}
+                {selectedMessage?.sender === chatRole && (
+                  <TouchableOpacity
+                    activeOpacity={0.7}
+                    onPress={handleDeleteForEveryone}
+                    style={styles.actionSheetRow}
+                  >
+                    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth={2}>
+                      <Polyline points="3 6 5 6 21 6" />
+                      <Path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                      <Line x1="10" y1="11" x2="10" y2="17" />
+                      <Line x1="14" y1="11" x2="14" y2="17" />
+                    </Svg>
+                    <Text style={[styles.actionSheetText, { color: '#EF4444' }]}>Delete for Everyone</Text>
+                  </TouchableOpacity>
+                )}
 
                 {/* Cancel */}
                 <TouchableOpacity
                   activeOpacity={0.8}
-                  onPress={() => setShowActionSheet(false)}
+                  onPress={() => {
+                    setShowActionSheet(false);
+                    setSelectedMessage(null);
+                  }}
                   style={[styles.actionSheetCancelBtn, { backgroundColor: theme.chipBg }]}
                 >
                   <Text style={[styles.actionSheetCancelText, { color: theme.textPrimary }]}>Cancel</Text>
@@ -918,7 +1104,7 @@ export const ChatScreen: React.FC = () => {
         </TouchableWithoutFeedback>
       </Modal>
 
-      {/* Lightbox Modal */}
+      {/* Lightbox Modal with Download & Save Option */}
       <Modal
         visible={!!lightboxImage}
         transparent
@@ -926,22 +1112,70 @@ export const ChatScreen: React.FC = () => {
         onRequestClose={() => setLightboxImage(null)}
       >
         <View style={styles.lightboxBackdrop}>
-          <TouchableOpacity
-            style={styles.lightboxCloseBtn}
-            onPress={() => setLightboxImage(null)}
-          >
-            <Svg width={24} height={24} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.5}>
-              <Line x1="18" y1="6" x2="6" y2="18" />
-              <Line x1="6" y1="6" x2="18" y2="18" />
-            </Svg>
-          </TouchableOpacity>
-          {!!lightboxImage && (
-            <Image
-              source={{ uri: lightboxImage }}
-              style={styles.lightboxImage}
-              resizeMode="contain"
-            />
-          )}
+          {/* Top Bar with Close, Title, and Share */}
+          <View style={[styles.lightboxTopBar, { paddingTop: Math.max(insets.top, 24) }]}>
+            <TouchableOpacity
+              style={styles.lightboxIconBtn}
+              onPress={() => setLightboxImage(null)}
+              accessibilityLabel="Close image viewer"
+            >
+              <Svg width={22} height={22} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.4}>
+                <Line x1="18" y1="6" x2="6" y2="18" />
+                <Line x1="6" y1="6" x2="18" y2="18" />
+              </Svg>
+            </TouchableOpacity>
+
+            <Text style={styles.lightboxTitle}>Shared Photo</Text>
+
+            <TouchableOpacity
+              style={styles.lightboxIconBtn}
+              onPress={() => handleShareImage(lightboxImage)}
+              accessibilityLabel="Share image"
+            >
+              <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.2}>
+                <Circle cx="18" cy="5" r="3" />
+                <Circle cx="6" cy="12" r="3" />
+                <Circle cx="18" cy="19" r="3" />
+                <Line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+                <Line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+              </Svg>
+            </TouchableOpacity>
+          </View>
+
+          {/* Fullscreen Image Preview */}
+          <View style={styles.lightboxImageWrap}>
+            {!!lightboxImage && (
+              <Image
+                source={{ uri: lightboxImage }}
+                style={styles.lightboxImage}
+                resizeMode="contain"
+              />
+            )}
+          </View>
+
+          {/* Bottom Action Bar with Download & Save to Gallery */}
+          <View style={[styles.lightboxBottomBar, { paddingBottom: Math.max(insets.bottom, 24) }]}>
+            <TouchableOpacity
+              style={[styles.lightboxSaveBtn, { backgroundColor: theme.primary }]}
+              onPress={() => handleSaveImage(lightboxImage)}
+              disabled={isSavingImage}
+              activeOpacity={0.85}
+              accessibilityLabel="Save image to device gallery"
+            >
+              {isSavingImage ? (
+                <ActivityIndicator size="small" color="#FFFFFF" />
+              ) : (
+                <Svg width={20} height={20} viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" strokeWidth={2.4}>
+                  <Path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                  <Polyline points="7 10 12 15 17 10" />
+                  <Line x1="12" y1="15" x2="12" y2="3" />
+                </Svg>
+              )}
+              <Text style={styles.lightboxSaveText}>
+                {isSavingImage ? 'Saving to Photos...' : 'Save Image to Gallery'}
+              </Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </Modal>
     </View>
@@ -1369,19 +1603,67 @@ const styles = StyleSheet.create({
   },
   lightboxBackdrop: {
     flex: 1,
-    backgroundColor: '#000000',
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'space-between',
+  },
+  lightboxTopBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    zIndex: 10,
+  },
+  lightboxIconBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  lightboxCloseBtn: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    padding: 10,
-    zIndex: 10,
+  lightboxTitle: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+    letterSpacing: 0.2,
+  },
+  lightboxImageWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 10,
   },
   lightboxImage: {
-    width: '94%',
-    height: '80%',
+    width: '100%',
+    height: '100%',
+  },
+  lightboxBottomBar: {
+    paddingHorizontal: 20,
+    paddingTop: 14,
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  lightboxSaveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    width: '100%',
+    maxWidth: 320,
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 14,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  lightboxSaveText: {
+    color: '#FFFFFF',
+    fontSize: 15,
+    fontWeight: '700',
+    letterSpacing: 0.2,
   },
 });

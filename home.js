@@ -208,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="book-cover-container">
             ${book.coverIllustration}
             <div class="book-spine-shadow" aria-hidden="true"></div>
-            <span class="card-badge-tag">${book.coverBadge}</span>
             <button class="card-bookmark-btn ${isBookmarked ? 'bookmarked' : ''}" title="Bookmark story" data-book-id="${book.id}">
               <svg viewBox="0 0 24 24" fill="${isBookmarked ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
                 <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
@@ -414,11 +413,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (currentBook) {
       // Re-populate Subtitle & Overview in selected language
-      const sub = getBookSubtitle(currentBook);
-      readerSubtitle.innerHTML = currentBook.author 
-        ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${currentBook.author}</span><div>${sub}</div>` 
-        : sub;
-      readerOverviewText.textContent = getBookOverview(currentBook);
+      if (readerSubtitle) {
+        const sub = getBookSubtitle(currentBook);
+        readerSubtitle.innerHTML = currentBook.author 
+          ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${currentBook.author}</span><div>${sub}</div>` 
+          : sub;
+      }
+      if (readerOverviewText) {
+        readerOverviewText.textContent = getBookOverview(currentBook);
+      }
 
       // Re-render chapter tabs with translated titles
       renderChapterTabs();
@@ -475,13 +478,15 @@ document.addEventListener('DOMContentLoaded', () => {
     readerCoverWrap.innerHTML = book.coverIllustration;
     readerCategoryPill.textContent = book.category;
     readerTitle.textContent = book.title;
-    const sub = getBookSubtitle(book);
-    readerSubtitle.innerHTML = book.author 
-      ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${book.author}</span><div>${sub}</div>` 
-      : sub;
-    readerReadTime.textContent = book.readTime;
-    readerChaptersCount.textContent = `${book.chapters.length} Chapters`;
-    readerOverviewText.textContent = getBookOverview(book);
+    if (readerSubtitle) {
+      const sub = getBookSubtitle(book);
+      readerSubtitle.innerHTML = book.author 
+        ? `<span class="reader-author-pill"><svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg> By ${book.author}</span><div>${sub}</div>` 
+        : sub;
+    }
+    if (readerReadTime) readerReadTime.textContent = book.readTime;
+    if (readerChaptersCount) readerChaptersCount.textContent = `${book.chapters.length} Chapters`;
+    if (readerOverviewText) readerOverviewText.textContent = getBookOverview(book);
 
     // Bookmark State in Reader
     const isBookmarked = bookmarkedBookIds.includes(book.id);
@@ -674,21 +679,25 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // 11. Font Size Adjustment Controls
-  fontDecBtn.addEventListener('click', () => {
-    if (currentProseSizeRem > 0.85) {
-      currentProseSizeRem -= 0.075;
-      document.documentElement.style.setProperty('--prose-font-size', `${currentProseSizeRem}rem`);
-      showToast('Text size reduced');
-    }
-  });
+  if (fontDecBtn) {
+    fontDecBtn.addEventListener('click', () => {
+      if (currentProseSizeRem > 0.85) {
+        currentProseSizeRem -= 0.075;
+        document.documentElement.style.setProperty('--prose-font-size', `${currentProseSizeRem}rem`);
+        showToast('Text size reduced');
+      }
+    });
+  }
 
-  fontIncBtn.addEventListener('click', () => {
-    if (currentProseSizeRem < 1.45) {
-      currentProseSizeRem += 0.075;
-      document.documentElement.style.setProperty('--prose-font-size', `${currentProseSizeRem}rem`);
-      showToast('Text size increased');
-    }
-  });
+  if (fontIncBtn) {
+    fontIncBtn.addEventListener('click', () => {
+      if (currentProseSizeRem < 1.45) {
+        currentProseSizeRem += 0.075;
+        document.documentElement.style.setProperty('--prose-font-size', `${currentProseSizeRem}rem`);
+        showToast('Text size increased');
+      }
+    });
+  }
 
   if (chapterABtn) {
     chapterABtn.addEventListener('click', (e) => {

@@ -8,7 +8,11 @@
     "userInterfaceStyle": "automatic",
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.paatshala.app"
+      "bundleIdentifier": "com.paatshala.app",
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Allow Paatshala to save images to your photos.",
+        "NSPhotoLibraryAddUsageDescription": "Allow Paatshala to save images to your photos."
+      }
     },
     "android": {
       "package": "com.paatshala.app",
@@ -19,9 +23,11 @@
       },
       "permissions": [
         "READ_EXTERNAL_STORAGE",
-        "WRITE_EXTERNAL_STORAGE"
+        "WRITE_EXTERNAL_STORAGE",
+        "READ_MEDIA_IMAGES"
       ],
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "softwareKeyboardLayoutMode": "pan"
     },
     "web": {
       "favicon": "./assets/icon.png"
@@ -31,6 +37,16 @@
         "projectId": "41ad269b-cc9b-4570-94b2-97bd44d739fb"
       }
     },
-    "owner": "lucky2503"
+    "owner": "lucky2503",
+    "plugins": [
+      "expo-sharing",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "Allow Paatshala to save photos to your library.",
+          "savePhotosPermission": "Allow Paatshala to save photos to your library."
+        }
+      ]
+    ]
   }
 }

@@ -151,15 +151,26 @@ function requestHandler(req, res) {
           if (payload.action === 'send' && payload.message) {
             messages.push(payload.message);
           } else if (payload.action === 'edit' && payload.id) {
-            const target = messages.find(m => m.id === payload.id);
+            const targetId = String(payload.id).trim();
+            const target = messages.find(m => String(m.id).trim() === targetId);
             if (target) {
               target.text = payload.text;
               target.isEdited = true;
             }
           } else if (payload.action === 'deleteForEveryone' && payload.id) {
-            messages = messages.filter(m => m.id !== payload.id);
+            const targetId = String(payload.id).trim();
+            const target = messages.find(m => String(m.id).trim() === targetId);
+            // Security: Enforce sender ownership
+            if (target && payload.user && target.sender === payload.user) {
+              messages = messages.filter(m => String(m.id).trim() !== targetId);
+            } else if (!target) {
+              // Message not found or already deleted
+            } else {
+              console.warn(`Unauthorized deleteForEveryone attempt by ${payload.user} on message ${targetId} sent by ${target.sender}`);
+            }
           } else if (payload.action === 'deleteForMe' && payload.id && payload.user) {
-            const target = messages.find(m => m.id === payload.id);
+            const targetId = String(payload.id).trim();
+            const target = messages.find(m => String(m.id).trim() === targetId);
             if (target) {
               if (!target.deletedFor) target.deletedFor = [];
               if (!target.deletedFor.includes(payload.user)) {

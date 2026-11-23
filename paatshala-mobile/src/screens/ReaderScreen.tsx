@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SvgXml } from 'react-native-svg';
-import Svg, { Path, Line, Polyline, Circle } from 'react-native-svg';
+import Svg, { Path, Line, Polyline } from 'react-native-svg';
 import * as Haptics from 'expo-haptics';
 import { useApp } from '../context/AppContext';
 import { HINGLISH_DATA } from '../data/hinglishData';
@@ -27,7 +27,6 @@ export const ReaderScreen: React.FC = () => {
     closeBook,
     setReadingLanguage,
     setChapterIndex,
-    adjustFontSize,
     theme,
     bookmarkedIds,
     toggleBookmark,
@@ -46,21 +45,6 @@ export const ReaderScreen: React.FC = () => {
 
   const isBookmarked = bookmarkedIds.includes(currentBook.id);
   const hinglishBook = HINGLISH_DATA[currentBook.id];
-
-  // Dynamic Subtitle & Overview based on selected language
-  const displayedSubtitle = useMemo(() => {
-    if (readingLanguage === 'hinglish' && hinglishBook?.subtitle) {
-      return hinglishBook.subtitle;
-    }
-    return currentBook.subtitle;
-  }, [readingLanguage, currentBook, hinglishBook]);
-
-  const displayedOverview = useMemo(() => {
-    if (readingLanguage === 'hinglish' && hinglishBook?.overview) {
-      return hinglishBook.overview;
-    }
-    return currentBook.overview;
-  }, [readingLanguage, currentBook, hinglishBook]);
 
   // Current Chapter Data based on selected language
   const currentChapter = useMemo(() => {
@@ -203,25 +187,6 @@ export const ReaderScreen: React.FC = () => {
               </TouchableOpacity>
             </View>
 
-            {/* Font Size Adjusters */}
-            <View style={[styles.fontControls, { backgroundColor: theme.chipBg, borderColor: theme.border }]}>
-              <TouchableOpacity
-                onPress={() => adjustFontSize(-1.5)}
-                style={styles.fontBtn}
-                accessibilityLabel="Decrease font size"
-              >
-                <Text style={[styles.fontBtnText, { color: theme.textPrimary }]}>A-</Text>
-              </TouchableOpacity>
-              <View style={[styles.fontDivider, { backgroundColor: theme.border }]} />
-              <TouchableOpacity
-                onPress={() => adjustFontSize(1.5)}
-                style={styles.fontBtn}
-                accessibilityLabel="Increase font size"
-              >
-                <Text style={[styles.fontBtnText, { color: theme.textPrimary }]}>A+</Text>
-              </TouchableOpacity>
-            </View>
-
             {/* Bookmark Button */}
             <TouchableOpacity
               onPress={handleBookmarkToggle}
@@ -275,32 +240,6 @@ export const ReaderScreen: React.FC = () => {
             </Text>
             <Text style={[styles.bookTitle, { color: theme.textPrimary }]}>
               {currentBook.title}
-            </Text>
-
-            {!!currentBook.author && (
-              <View style={styles.authorRow}>
-                <Svg width={13} height={13} viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth={2}>
-                  <Path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                  <Circle cx="12" cy="7" r="4" />
-                </Svg>
-                <Text style={[styles.authorText, { color: theme.textSecondary }]}>By {currentBook.author}</Text>
-              </View>
-            )}
-
-            <Text style={[styles.bookSubtitle, { color: theme.primary }]}>
-              {displayedSubtitle}
-            </Text>
-
-            <View style={styles.specsRow}>
-              <Text style={[styles.specsText, { color: theme.textSecondary }]}>{currentBook.readTime}</Text>
-              <Text style={[styles.specsDot, { color: theme.textSecondary }]}>•</Text>
-              <Text style={[styles.specsText, { color: theme.textSecondary }]}>
-                {currentBook.chapters.length} Chapters
-              </Text>
-            </View>
-
-            <Text style={[styles.overviewText, { color: theme.textSecondary }]}>
-              {displayedOverview}
             </Text>
           </View>
         </View>
@@ -382,7 +321,6 @@ export const ReaderScreen: React.FC = () => {
                 accessibilityLabel="Open Participant A Chat"
               >
                 <Text style={styles.chatIconLetter}>A</Text>
-                <View style={styles.onlinePingDot} />
               </TouchableOpacity>
             )}
 
@@ -395,7 +333,6 @@ export const ReaderScreen: React.FC = () => {
                 accessibilityLabel="Open Participant D Chat"
               >
                 <Text style={styles.chatIconLetter}>D</Text>
-                <View style={styles.onlinePingDot} />
               </TouchableOpacity>
             )}
           </View>
@@ -524,24 +461,6 @@ const styles = StyleSheet.create({
   langPillText: {
     fontSize: 11,
   },
-  fontControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderRadius: 8,
-    borderWidth: 1,
-  },
-  fontBtn: {
-    paddingHorizontal: 7,
-    paddingVertical: 3.5,
-  },
-  fontBtnText: {
-    fontSize: 11.5,
-    fontWeight: '700',
-  },
-  fontDivider: {
-    width: 1,
-    height: 12,
-  },
   bookmarkBtn: {
     width: 32,
     height: 32,
@@ -564,6 +483,7 @@ const styles = StyleSheet.create({
   },
   heroSection: {
     flexDirection: 'row',
+    alignItems: 'center',
     gap: 14,
     marginBottom: 20,
   },
@@ -594,38 +514,6 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
     marginBottom: 3,
     lineHeight: 23,
-  },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    marginBottom: 4,
-  },
-  authorText: {
-    fontSize: 11.5,
-    fontWeight: '600',
-  },
-  bookSubtitle: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 6,
-  },
-  specsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 8,
-  },
-  specsText: {
-    fontSize: 11.5,
-    fontWeight: '500',
-  },
-  specsDot: {
-    fontSize: 12,
-  },
-  overviewText: {
-    fontSize: 12,
-    lineHeight: 17,
   },
   tabsScrollContainer: {
     paddingBottom: 16,

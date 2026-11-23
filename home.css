@@ -1212,16 +1212,7 @@ html, body {
 
 .a-btn-ping,
 .d-btn-ping {
-  position: absolute;
-  top: 2px;
-  right: 2px;
-  width: 12px;
-  height: 12px;
-  background-color: #10b981;
-  border-radius: 50%;
-  border: 2px solid #ffffff;
-  display: none; /* Shown only when participant is actively inside chat */
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.35);
+  display: none !important;
 }
 
 .chapter-a-btn:hover,

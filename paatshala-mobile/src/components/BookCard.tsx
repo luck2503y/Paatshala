@@ -42,11 +42,6 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onPress }) => {
           <SvgXml xml={book.coverIllustration} width="100%" height={210} />
         </View>
 
-        {/* Badge Tag */}
-        <View style={styles.badgeTag}>
-          <Text style={styles.badgeText}>{book.coverBadge}</Text>
-        </View>
-
         {/* Bookmark Button */}
         <TouchableOpacity
           activeOpacity={0.7}
