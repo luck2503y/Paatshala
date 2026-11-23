@@ -2,15 +2,25 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ThemeColors, lightTheme, darkTheme } from '../constants/theme';
 import { Book } from '../types';
+import { tokenCache } from '../utils/tokenCache';
 
 export type ScreenName = 'login' | 'library' | 'reader' | 'chat';
+
+const CLERK_PUBLISHABLE_KEY = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY || '';
+export const isClerkConfigured =
+  typeof CLERK_PUBLISHABLE_KEY === 'string' &&
+  (CLERK_PUBLISHABLE_KEY.startsWith('pk_test_') || CLERK_PUBLISHABLE_KEY.startsWith('pk_live_')) &&
+  !CLERK_PUBLISHABLE_KEY.includes('your_clerk_publishable_key_here');
 
 interface AppContextType {
   themeMode: 'light' | 'dark';
   theme: ThemeColors;
   toggleTheme: () => void;
   user: string | null;
-  login: (username: string) => Promise<void>;
+  clerkUserId: string | null;
+  userEmail: string | null;
+  isClerkConfigured: boolean;
+  login: (username: string, clerkUserId?: string, userEmail?: string) => Promise<void>;
   logout: () => Promise<void>;
   bookmarkedIds: string[];
   toggleBookmark: (bookId: string) => Promise<boolean>;
@@ -42,6 +52,8 @@ const AppContext = createContext<AppContextType | null>(null);
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [themeMode, setThemeMode] = useState<'light' | 'dark'>('light');
   const [user, setUser] = useState<string | null>(null);
+  const [clerkUserId, setClerkUserId] = useState<string | null>(null);
+  const [userEmail, setUserEmail] = useState<string | null>(null);
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
   const [activeScreen, setActiveScreen] = useState<ScreenName>('login');
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -62,8 +74,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           setThemeMode(savedTheme);
         }
         const savedUser = await AsyncStorage.getItem('paatshala-user');
+        const savedClerkId = await AsyncStorage.getItem('paatshala-clerk-user-id');
+        const savedEmail = await AsyncStorage.getItem('paatshala-user-email');
         if (savedUser) {
           setUser(savedUser);
+          if (savedClerkId) setClerkUserId(savedClerkId);
+          if (savedEmail) setUserEmail(savedEmail);
           setActiveScreen('library');
         }
         const savedBookmarks = await AsyncStorage.getItem('paatshala-book-bookmarks');
@@ -90,11 +106,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
   };
 
-  const login = async (username: string) => {
+  const login = async (username: string, clerkId?: string, email?: string) => {
     setUser(username);
+    if (clerkId) setClerkUserId(clerkId);
+    if (email) setUserEmail(email);
     setActiveScreen('library');
     try {
       await AsyncStorage.setItem('paatshala-user', username);
+      if (clerkId) await AsyncStorage.setItem('paatshala-clerk-user-id', clerkId);
+      if (email) await AsyncStorage.setItem('paatshala-user-email', email);
     } catch (e) {
       console.error('Error saving user session:', e);
     }
@@ -102,10 +122,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const logout = async () => {
     setUser(null);
+    setClerkUserId(null);
+    setUserEmail(null);
     setCurrentBook(null);
     setActiveScreen('login');
     try {
       await AsyncStorage.removeItem('paatshala-user');
+      await AsyncStorage.removeItem('paatshala-clerk-user-id');
+      await AsyncStorage.removeItem('paatshala-user-email');
+      await tokenCache.clearToken?.('__clerk_client_jwt');
     } catch (e) {
       console.error('Error removing user session:', e);
     }
@@ -175,6 +200,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         theme,
         toggleTheme,
         user,
+        clerkUserId,
+        userEmail,
+        isClerkConfigured,
         login,
         logout,
         bookmarkedIds,

@@ -46,7 +46,8 @@
           "photosPermission": "Allow Paatshala to save photos to your library.",
           "savePhotosPermission": "Allow Paatshala to save photos to your library."
         }
-      ]
+      ],
+      "expo-secure-store"
     ]
   }
 }

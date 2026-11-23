@@ -4,3 +4,13 @@ Thumbs.db
 *.log
 pictures/
 
+# Environment and Secret Protection
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+serviceAccountKey*.json
+*firebase-adminsdk*.json
+paatshala-backend/node_modules/
+
