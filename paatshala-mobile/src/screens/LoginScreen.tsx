@@ -40,7 +40,7 @@ const ClerkAuthForm: React.FC<{
     let valid = true;
 
     if (!identifier.trim()) {
-      setIdentifierError('Please enter your email or username');
+      setIdentifierError('Please enter your username');
       valid = false;
     } else {
       setIdentifierError('');
@@ -94,7 +94,7 @@ const ClerkAuthForm: React.FC<{
       const errorMessage =
         firstError?.longMessage ||
         firstError?.message ||
-        'Invalid email/username or password. Please verify your credentials.';
+        'Invalid username or password. Please verify your credentials.';
       setPasswordError(errorMessage);
       try {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
@@ -106,9 +106,9 @@ const ClerkAuthForm: React.FC<{
 
   return (
     <>
-      {/* Email / Username Input */}
+      {/* Username Input */}
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Email or Username</Text>
+        <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Username</Text>
         <View
           style={[
             styles.inputWrapper,
@@ -126,7 +126,7 @@ const ClerkAuthForm: React.FC<{
           </View>
           <TextInput
             style={[styles.input, { color: theme.textPrimary }]}
-            placeholder="Enter your email or username"
+            placeholder="Enter your username"
             placeholderTextColor={theme.textSecondary}
             value={identifier}
             onChangeText={(text) => {
@@ -240,7 +240,7 @@ const SetupNoticeForm: React.FC<{
       </View>
 
       <View style={styles.inputGroup}>
-        <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Email or Username</Text>
+        <Text style={[styles.inputLabel, { color: theme.textPrimary }]}>Username</Text>
         <View style={[styles.inputWrapper, { backgroundColor: theme.inputBg, borderColor: theme.border }]}>
           <View style={styles.iconContainer}>
             <Svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={theme.textSecondary} strokeWidth={2}>
@@ -250,7 +250,7 @@ const SetupNoticeForm: React.FC<{
           </View>
           <TextInput
             style={[styles.input, { color: theme.textPrimary }]}
-            placeholder="Enter your email or username"
+            placeholder="Enter your username"
             placeholderTextColor={theme.textSecondary}
             value={identifier}
             onChangeText={setIdentifier}
